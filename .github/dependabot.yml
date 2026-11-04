@@ -1,0 +1,25 @@
+version: 2
+
+# Weekly grouped updates against dev; they reach main through the normal merge.
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm:
+        patterns: ["*"]
+    ignore:
+      # The types follow the Node major the action runs on (runs.using in action.yml).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]

@@ -1,0 +1,102 @@
+name: calendars
+
+# Builds the calendars of fixtical.yml.
+# Also on a repository_dispatch of type "annotations": a tool sends its
+# annotations with it, or asks for a rebuild after writing its annotation file
+# into the gist.
+# With the FIXTICAL_GIST_TOKEN and FIXTICAL_GIST_ID secrets the feeds go to
+# that gist (but those with gist: false). Every feed is also uploaded as a
+# Pages artifact and, when the FIXTICAL_PAGES variable is "true" (and Pages
+# uses GitHub Actions as its source), deployed to GitHub Pages. Without a
+# configuration nothing runs.
+# The secrets may be the production environment's, limited to the default
+# branch; repository secrets work as well.
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+    # Monthly: keeps the schedule from being paused after 60 days without commits.
+    - cron: "41 3 1 * *"
+  workflow_dispatch:
+    inputs:
+      notify_test:
+        description: Send a test notification
+        type: boolean
+        default: false
+  # Another tool changed its annotation file in the gist.
+  repository_dispatch:
+    types: [annotations]
+  push:
+    branches: [main]
+    paths: ["fixtical.yml"]
+
+permissions: {}
+
+concurrency:
+  group: calendars
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event.schedule != '41 3 1 * *'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    # For its secrets only: a build is not a deployment.
+    environment:
+      name: production
+      deployment: false
+    outputs:
+      configured: ${{ steps.feeds.outputs.configured }}
+      target: ${{ steps.feeds.outputs.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - id: feeds
+        uses: ./
+        with:
+          out: public
+          notify_test: ${{ inputs.notify_test == true }}
+          dispatch: ${{ github.event_name == 'repository_dispatch' && toJSON(github.event.client_payload) || '' }}
+          site_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+          state_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/state.json
+        env:
+          FIXTICAL_GIST_TOKEN: ${{ secrets.FIXTICAL_GIST_TOKEN }}
+          FIXTICAL_GIST_ID: ${{ secrets.FIXTICAL_GIST_ID }}
+          FIXTICAL_NTFY_TOPIC: ${{ secrets.FIXTICAL_NTFY_TOPIC }}
+          FIXTICAL_GOOGLE_MAPS_KEY: ${{ secrets.FIXTICAL_GOOGLE_MAPS_KEY }}
+          FIXTICAL_MVLSZ_KEY: ${{ secrets.FIXTICAL_MVLSZ_KEY }}
+      - if: steps.feeds.outputs.configured == 'true'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: public
+
+  pages:
+    needs: build
+    if: needs.build.outputs.configured == 'true' && vars.FIXTICAL_PAGES == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  keepalive:
+    if: github.event.schedule == '41 3 1 * *'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      # Enabling the workflow again counts as activity, so GitHub does not pause its schedule.
+      - name: Keep the schedule enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh api -X PUT "repos/$GH_REPO/actions/workflows/calendars.yml/enable"

@@ -1,0 +1,67 @@
+# The calendars this repository builds. In a fork, change the team below:
+# either `club` (and `category`), or `team_url` with the link of the team's page.
+# Only the first calendar goes to the gist too; the others are on Pages only.
+# A calendar is named after the team, as the source names it.
+calendars:
+  - source: mlsz
+    slug: ujpest
+    color: "#623A96"
+    club: 14374
+    category: men
+  - source: mlsz
+    slug: ujpest-ii
+    color: "#623A96"
+    club: 14374
+    category: men
+    competition: "NB III"
+    include: [league]
+    gist: false
+  - source: mlsz
+    slug: ujpest-noi
+    color: "#623A96"
+    club: 14374
+    category: women
+    gist: false
+  - source: mlsz
+    slug: ujpest-futsal
+    color: "#623A96"
+    club: 14374
+    category: futsal
+    gist: false
+  - source: mlsz
+    slug: ujpest-noi-futsal
+    color: "#623A96"
+    club: 14374
+    category: women-futsal
+    gist: false
+  - source: mvlsz
+    slug: uvse
+    color: "#4A287F"
+    club: 197
+    category: men
+    gist: false
+  - source: mvlsz
+    slug: uvse-noi
+    color: "#4A287F"
+    club: 197
+    category: women
+    gist: false
+  - source: mvlsz
+    slug: uvse-noi-ii
+    color: "#4A287F"
+    club: 116
+    category: women
+    competition: "OB I/B"
+    gist: false
+  - source: mrsz
+    slug: ute-roplabda
+    color: "#42216F"
+    team: UTE
+    category: women
+    gist: false
+  - source: mrsz
+    slug: ute-roplabda-u23
+    color: "#42216F"
+    team: UTE U23
+    category: women
+    gist: false

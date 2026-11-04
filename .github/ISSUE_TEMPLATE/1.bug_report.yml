@@ -1,0 +1,50 @@
+name: Bug Report
+description: Something does not work as described.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        **Before posting:** remove tokens, gist ids and addresses, notification topics and API keys from
+        everything below.
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      description: What happened, and what you expected instead. Which match or calendar, if it is specific?
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Calendar configuration
+      description: The calendar's entry from your `fixtical.yml` (or the team link you used).
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Workflow log
+      description: The output of the fixtical step of the calendars workflow (redacted), or a link to the run.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: fixtical version or commit
+      placeholder: eg. v1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: publishing
+    attributes:
+      label: Where the calendar is published
+      options:
+        - GitHub Pages
+        - Gist
+        - Locally, from the command line
+    validations:
+      required: true

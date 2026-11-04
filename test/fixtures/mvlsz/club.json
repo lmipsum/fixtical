@@ -1,0 +1,87 @@
+{
+ "id": 197,
+ "name": "UVSE Vízilabda Korlátolt Felelősségű Társaság",
+ "competitionTeams": [
+  {
+   "id": 9879,
+   "season_id": 25,
+   "competition": {
+    "id": 878,
+    "name": "E.ON Férfi OB I. Bajnokság",
+    "gender": "male"
+   }
+  },
+  {
+   "id": 9880,
+   "season_id": 25,
+   "competition": {
+    "id": 879,
+    "name": "MOL Női OB I. Bajnokság",
+    "gender": "female"
+   }
+  },
+  {
+   "id": 9881,
+   "season_id": 25,
+   "competition": {
+    "id": 880,
+    "name": "BENU Férfi Magyar Kupa",
+    "gender": "male"
+   }
+  },
+  {
+   "id": 9882,
+   "season_id": 25,
+   "competition": {
+    "id": 881,
+    "name": "BENU Női Magyar Kupa",
+    "gender": "female"
+   }
+  },
+  {
+   "id": 12281,
+   "season_id": 25,
+   "competition": {
+    "id": 2193,
+    "name": "Férfi Alsóházi Bajnokság",
+    "gender": "male"
+   }
+  },
+  {
+   "id": 12467,
+   "season_id": 27,
+   "competition": {
+    "id": 2205,
+    "name": "BENU Férfi Magyar Kupa",
+    "gender": "male"
+   }
+  },
+  {
+   "id": 12627,
+   "season_id": 27,
+   "competition": {
+    "id": 2209,
+    "name": "BENU Női Magyar Kupa",
+    "gender": "female"
+   }
+  },
+  {
+   "id": 12635,
+   "season_id": 27,
+   "competition": {
+    "id": 2203,
+    "name": "E.ON Férfi OB I. Bajnokság",
+    "gender": "male"
+   }
+  },
+  {
+   "id": 12867,
+   "season_id": 27,
+   "competition": {
+    "id": 2207,
+    "name": "MOL Női OB I. Bajnokság",
+    "gender": "female"
+   }
+  }
+ ]
+}

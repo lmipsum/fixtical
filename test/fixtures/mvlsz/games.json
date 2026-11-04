@@ -1,0 +1,111 @@
+{
+ "current_page": 1,
+ "last_page": 1,
+ "data": [
+  {
+   "id": 311345,
+   "start_date_time": "2026-09-09T16:45:00+00:00",
+   "is_without_start_time": false,
+   "status": "completed",
+   "home_competition_team_id": 12635,
+   "away_competition_team_id": 12797,
+   "home_team_score": 10,
+   "away_team_score": 11,
+   "homeCompetitionTeam": {
+    "name": "UVSE Vízilabda Kft",
+    "short_name": "UVSE"
+   },
+   "awayCompetitionTeam": {
+    "name": "Semmelweis OSC",
+    "short_name": "SOSC"
+   },
+   "facility": {
+    "name": "Hajós Alfréd Sportuszoda - fedett"
+   }
+  },
+  {
+   "id": 311357,
+   "start_date_time": "2026-09-23T16:45:00+00:00",
+   "is_without_start_time": false,
+   "status": "completed",
+   "home_competition_team_id": 12635,
+   "away_competition_team_id": 12653,
+   "home_team_score": 10,
+   "away_team_score": 23,
+   "homeCompetitionTeam": {
+    "name": "UVSE Vízilabda Kft",
+    "short_name": "UVSE"
+   },
+   "awayCompetitionTeam": {
+    "name": "BVSC Manna ABC",
+    "short_name": "BVSC"
+   },
+   "facility": {
+    "name": "Hajós Alfréd Sportuszoda - fedett"
+   }
+  },
+  {
+   "id": 311383,
+   "start_date_time": "2026-10-02T16:45:00+00:00",
+   "is_without_start_time": false,
+   "status": "completed",
+   "home_competition_team_id": 12635,
+   "away_competition_team_id": 12523,
+   "home_team_score": 4,
+   "away_team_score": 21,
+   "homeCompetitionTeam": {
+    "name": "UVSE Vízilabda Kft",
+    "short_name": "UVSE"
+   },
+   "awayCompetitionTeam": {
+    "name": "Szolnoki Dózsa",
+    "short_name": "Szolnoki Dózsa"
+   },
+   "facility": {
+    "name": "Hajós Alfréd Sportuszoda - fedett"
+   }
+  },
+  {
+   "id": 311391,
+   "start_date_time": "2026-10-16T16:45:00+00:00",
+   "is_without_start_time": false,
+   "status": "completed",
+   "home_competition_team_id": 12635,
+   "away_competition_team_id": 12811,
+   "home_team_score": 15,
+   "away_team_score": 17,
+   "homeCompetitionTeam": {
+    "name": "UVSE Vízilabda Kft",
+    "short_name": "UVSE"
+   },
+   "awayCompetitionTeam": {
+    "name": "Kaposvári Vízilabda Klub Kft.",
+    "short_name": "Kaposvári Vízilabda Klub"
+   },
+   "facility": {
+    "name": "Hajós Alfréd Sportuszoda - fedett"
+   }
+  },
+  {
+   "id": 311339,
+   "start_date_time": "2026-09-09T16:00:00+00:00",
+   "is_without_start_time": false,
+   "status": "completed",
+   "home_competition_team_id": 12455,
+   "away_competition_team_id": 12327,
+   "home_team_score": 11,
+   "away_team_score": 22,
+   "homeCompetitionTeam": {
+    "name": "Vasas-Plaket",
+    "short_name": "Vasas-Plaket"
+   },
+   "awayCompetitionTeam": {
+    "name": "FTC Telekom Waterpolo",
+    "short_name": "FTC Telekom"
+   },
+   "facility": {
+    "name": "Császár-Komjádi Sportuszoda"
+   }
+  }
+ ]
+}

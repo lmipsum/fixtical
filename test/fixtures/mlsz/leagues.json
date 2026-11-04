@@ -1,0 +1,1176 @@
+{
+ "season": "67",
+ "federations": [
+  {
+   "id": "0",
+   "mlsz_id": "0",
+   "name": "MLSZ"
+  },
+  {
+   "id": "1",
+   "mlsz_id": "1",
+   "name": "Bács-Kiskun"
+  },
+  {
+   "id": "2",
+   "mlsz_id": "2",
+   "name": "Baranya"
+  },
+  {
+   "id": "3",
+   "mlsz_id": "3",
+   "name": "Békés"
+  },
+  {
+   "id": "4",
+   "mlsz_id": "4",
+   "name": "Borsod-Abaúj-Zemplén"
+  },
+  {
+   "id": "5",
+   "mlsz_id": "5",
+   "name": "Budapest"
+  },
+  {
+   "id": "6",
+   "mlsz_id": "6",
+   "name": "Csongrád"
+  },
+  {
+   "id": "7",
+   "mlsz_id": "7",
+   "name": "Fejér"
+  },
+  {
+   "id": "8",
+   "mlsz_id": "8",
+   "name": "Győr-Moson-Sopron"
+  },
+  {
+   "id": "9",
+   "mlsz_id": "9",
+   "name": "Hajdú-Bihar"
+  },
+  {
+   "id": "10",
+   "mlsz_id": "10",
+   "name": "Heves"
+  },
+  {
+   "id": "11",
+   "mlsz_id": "11",
+   "name": "Jász-Nagykun-Szolnok"
+  },
+  {
+   "id": "12",
+   "mlsz_id": "12",
+   "name": "Komárom-Esztergom"
+  },
+  {
+   "id": "13",
+   "mlsz_id": "13",
+   "name": "Nógrád"
+  },
+  {
+   "id": "14",
+   "mlsz_id": "14",
+   "name": "Pest"
+  },
+  {
+   "id": "15",
+   "mlsz_id": "15",
+   "name": "Somogy"
+  },
+  {
+   "id": "16",
+   "mlsz_id": "16",
+   "name": "Szabolcs-Szatmár-Bereg"
+  },
+  {
+   "id": "17",
+   "mlsz_id": "17",
+   "name": "Tolna"
+  },
+  {
+   "id": "18",
+   "mlsz_id": "18",
+   "name": "Vas"
+  },
+  {
+   "id": "19",
+   "mlsz_id": "19",
+   "name": "Veszprém"
+  },
+  {
+   "id": "20",
+   "mlsz_id": "20",
+   "name": "Zala"
+  }
+ ],
+ "leagues": [
+  {
+   "id": "33586",
+   "name": "OTP Bank Liga",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "12"
+  },
+  {
+   "id": "33587",
+   "name": "Merkantil Bank Liga",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "12"
+  },
+  {
+   "id": "33588",
+   "name": "NB III. Észak-Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "14"
+  },
+  {
+   "id": "34054",
+   "name": "NB III. Dél-Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "14"
+  },
+  {
+   "id": "34055",
+   "name": "NB III. Észak-Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "14"
+  },
+  {
+   "id": "34056",
+   "name": "NB III. Dél-Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "14"
+  },
+  {
+   "id": "33589",
+   "name": "MOL Magyar Kupa",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "5"
+  },
+  {
+   "id": "34125",
+   "name": "MLSZ Országos U19 Kiemelt",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "7"
+  },
+  {
+   "id": "33758",
+   "name": "MLSZ Országos U19 Alap",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "7"
+  },
+  {
+   "id": "34126",
+   "name": "MLSZ Országos U17 Kiemelt",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "7"
+  },
+  {
+   "id": "33760",
+   "name": "MLSZ Országos U17 Alap",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "7"
+  },
+  {
+   "id": "34127",
+   "name": "MLSZ Országos U16 Kiemelt",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33761",
+   "name": "MLSZ Országos U16 Alap",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34128",
+   "name": "MLSZ Országos U15 Kiemelt",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33762",
+   "name": "MLSZ Országos U15 Alap",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34129",
+   "name": "MLSZ Országos U14 Kiemelt",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34130",
+   "name": "MLSZ Országos U14 Alap Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "33763",
+   "name": "MLSZ Országos U14 Alap Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34132",
+   "name": "MLSZ Országos U13 Észak-Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34133",
+   "name": "MLSZ Országos U12 Észak-Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34134",
+   "name": "MLSZ Országos U13 Dél-Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34135",
+   "name": "MLSZ Országos U12 Dél-Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34136",
+   "name": "MLSZ Országos U13 Közép",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34137",
+   "name": "MLSZ Országos U12 Közép",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "33764",
+   "name": "MLSZ Országos U13 Észak-Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34139",
+   "name": "MLSZ Országos U12 Észak-Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34138",
+   "name": "MLSZ Országos U13 Dél-Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "33765",
+   "name": "MLSZ Országos U12 Dél-Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "33775",
+   "name": "MLSZ Regionális U19 Kiemelt Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34140",
+   "name": "MLSZ Regionális U19 Kiemelt Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33780",
+   "name": "MLSZ Regionális U17 Kiemelt Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34141",
+   "name": "MLSZ Regionális U17 Kiemelt Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33781",
+   "name": "MLSZ Regionális U16 Kiemelt Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34142",
+   "name": "MLSZ Regionális U16 Kiemelt Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33782",
+   "name": "MLSZ Regionális U15 Kiemelt Nyugat",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34143",
+   "name": "MLSZ Regionális U15 Kiemelt Kelet",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34321",
+   "name": "MLSZ Országos U9 Nyugat 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34430",
+   "name": "MLSZ Országos U10 Nyugat 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34448",
+   "name": "MLSZ Országos U11 Nyugat 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34322",
+   "name": "MLSZ Országos U9 Nyugat 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34432",
+   "name": "MLSZ Országos U10 Nyugat 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34449",
+   "name": "MLSZ Országos U11 Nyugat 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34323",
+   "name": "MLSZ Országos U9 Nyugat 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34434",
+   "name": "MLSZ Országos U10 Nyugat 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34450",
+   "name": "MLSZ Országos U11 Nyugat 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34324",
+   "name": "MLSZ Országos U9 Közép 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34435",
+   "name": "MLSZ Országos U10 Közép 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34451",
+   "name": "MLSZ Országos U11 Közép 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34325",
+   "name": "MLSZ Országos U9 Közép 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34438",
+   "name": "MLSZ Országos U10 Közép 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34452",
+   "name": "MLSZ Országos U11 Közép 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34326",
+   "name": "MLSZ Országos U9 Közép 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34440",
+   "name": "MLSZ Országos U10 Közép 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34455",
+   "name": "MLSZ Országos U11 Közép 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34327",
+   "name": "MLSZ Országos U9 Közép 4. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34441",
+   "name": "MLSZ Országos U10 Közép 4. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34456",
+   "name": "MLSZ Országos U11 Közép 4. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34328",
+   "name": "MLSZ Országos U9 Közép 5. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34442",
+   "name": "MLSZ Országos U10 Közép 5. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34457",
+   "name": "MLSZ Országos U11 Közép 5. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34335",
+   "name": "MLSZ Országos U9 Közép 6. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34443",
+   "name": "MLSZ Országos U10 Közép 6. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34458",
+   "name": "MLSZ Országos U11 Közép 6. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34336",
+   "name": "MLSZ Országos U9 Közép 7. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34444",
+   "name": "MLSZ Országos U10 Közép 7. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34459",
+   "name": "MLSZ Országos U11 Közép 7. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34337",
+   "name": "MLSZ Országos U9 Kelet 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34445",
+   "name": "MLSZ Országos U10 Kelet 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34460",
+   "name": "MLSZ Országos U11 Kelet 1. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34338",
+   "name": "MLSZ Országos U9 Kelet 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34446",
+   "name": "MLSZ Országos U10 Kelet 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34461",
+   "name": "MLSZ Országos U11 Kelet 2. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34339",
+   "name": "MLSZ Országos U9 Kelet 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34447",
+   "name": "MLSZ Országos U10 Kelet 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34462",
+   "name": "MLSZ Országos U11 Kelet 3. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "33792",
+   "name": "MLSZ Országos U19 Kupa",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "33793",
+   "name": "MLSZ Országos U17 Kupa",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "33794",
+   "name": "MLSZ Országos U16 Kupa",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "33633",
+   "name": "Simple Női Liga NB I.",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "14"
+  },
+  {
+   "id": "33634",
+   "name": "Női NB II. Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34124",
+   "name": "Női NB II. Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "7"
+  },
+  {
+   "id": "33635",
+   "name": "Simple Női Kupa",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "5"
+  },
+  {
+   "id": "33636",
+   "name": "MLSZ Leány Országos U-19",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33637",
+   "name": "MLSZ Leány Országos U-17",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33638",
+   "name": "MLSZ Leány Országos U-15",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33639",
+   "name": "MLSZ Leány Regionális U-19 Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "10"
+  },
+  {
+   "id": "34372",
+   "name": "MLSZ Leány Regionális U-19 Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "11"
+  },
+  {
+   "id": "33640",
+   "name": "MLSZ Leány Regionális U-16 Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34378",
+   "name": "MLSZ Leány Regionális U-16 Közép csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34379",
+   "name": "MLSZ Leány Regionális U-16 Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "33641",
+   "name": "MLSZ Leány Regionális HNP U-14 Észak-Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34380",
+   "name": "MLSZ Leány Regionális HNP U-14 Dél-Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34381",
+   "name": "MLSZ Leány Regionális HNP U-14 Észak-Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34382",
+   "name": "MLSZ Leány Regionális HNP U-14 Dél-Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "9"
+  },
+  {
+   "id": "34642",
+   "name": "Leány Reg. U-12 I. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34643",
+   "name": "Leány Reg. U-12 II. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34644",
+   "name": "Leány Reg. U-12 III. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34645",
+   "name": "Leány Reg. U-12 IV. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "34646",
+   "name": "Leány Reg. U-12 V. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34647",
+   "name": "Leány Reg. U-12 VI. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34648",
+   "name": "Leány Reg. U-12 VII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "34649",
+   "name": "Leány Reg. U-12 VIII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34650",
+   "name": "Leány Reg. U-12 IX. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "34651",
+   "name": "Leány Reg. U-12 X. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34652",
+   "name": "Leány Reg. U-12 XI. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34653",
+   "name": "Leány Reg. U-12 XII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34654",
+   "name": "Leány Reg. U-12 XIII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34655",
+   "name": "Leány Reg. U-12 XIV. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "34656",
+   "name": "Leány Reg. U-12 XV. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34657",
+   "name": "Leány Reg. U-12 XVI. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34658",
+   "name": "Leány Reg. U-12 XVII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34611",
+   "name": "Leány Reg. U-10 I. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34612",
+   "name": "Leány Reg. U-10 II. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34613",
+   "name": "Leány Reg. U-10 III. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34616",
+   "name": "Leány Reg. U-10 IV. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "34617",
+   "name": "Leány Reg. U-10 V. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34618",
+   "name": "Leány Reg. U-10 VI. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34619",
+   "name": "Leány Reg. U-10 VII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34620",
+   "name": "Leány Reg. U-10 VIII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34621",
+   "name": "Leány Reg. U-10 IX. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "1"
+  },
+  {
+   "id": "34622",
+   "name": "Leány Reg. U-10 X. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34623",
+   "name": "Leány Reg. U-10 XI. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34624",
+   "name": "Leány Reg. U-10 XII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34637",
+   "name": "Leány Reg. U-10 XIII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34638",
+   "name": "Leány Reg. U-10 XIV. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "34639",
+   "name": "Leány Reg. U-10 XV. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34640",
+   "name": "Leány Reg. U-10 XVI. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "34641",
+   "name": "Leány Reg. U-10 XVII. csoport",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "3"
+  },
+  {
+   "id": "33930",
+   "name": "Férfi Futsal NB I.",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "10"
+  },
+  {
+   "id": "34146",
+   "name": "Férfi Futsal NB II. Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "7"
+  },
+  {
+   "id": "34147",
+   "name": "Férfi Futsal NB II. Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "7"
+  },
+  {
+   "id": "33933",
+   "name": "Férfi Futsal Magyar Kupa",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "33934",
+   "name": "MLSZ Országos Futsal U19",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "33935",
+   "name": "MLSZ Országos Futsal U17",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "6"
+  },
+  {
+   "id": "34425",
+   "name": "MLSZ Regionális Futsal U19 Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "34426",
+   "name": "MLSZ Regionális Futsal U19 Közép csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "34427",
+   "name": "MLSZ Regionális Futsal U19 Déli csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "34428",
+   "name": "MLSZ Regionális Futsal U19 Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "34431",
+   "name": "MLSZ Regionális Futsal U17 Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "34433",
+   "name": "MLSZ Regionális Futsal U17 Közép csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "34436",
+   "name": "MLSZ Regionális Futsal U17 Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "4"
+  },
+  {
+   "id": "33939",
+   "name": "Női Futsal NB I.",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "8"
+  },
+  {
+   "id": "34558",
+   "name": "Női Futsal NB II. Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "1"
+  },
+  {
+   "id": "34560",
+   "name": "Női Futsal NB II. Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "33942",
+   "name": "Női Futsal Magyar Kupa",
+   "isCup": "1",
+   "ifa_AktualisFordulo": "1"
+  },
+  {
+   "id": "34581",
+   "name": "MLSZ Országos Leány Futsal U17 Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "34580",
+   "name": "MLSZ Országos Leány Futsal U17 Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "2"
+  },
+  {
+   "id": "34596",
+   "name": "MLSZ Regionális Leány Futsal U15 Keleti csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "1"
+  },
+  {
+   "id": "34597",
+   "name": "MLSZ Regionális Leány Futsal U15 Nyugati csoport",
+   "isCup": "0",
+   "ifa_AktualisFordulo": "1"
+  }
+ ],
+ "turns": [
+  {
+   "turn": "1",
+   "date": "2026-07-26 15:45:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "2",
+   "date": "2026-08-02 15:30:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "3",
+   "date": "2026-08-08 15:30:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "4",
+   "date": "2026-08-16 16:30:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "5",
+   "date": "2026-08-22 15:30:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "6",
+   "date": "2026-08-30 16:30:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "7",
+   "date": "2026-09-04 18:30:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "8",
+   "date": "2026-09-20 14:45:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "9",
+   "date": "2026-10-10 14:45:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "10",
+   "date": "2026-10-17 17:00:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "11",
+   "date": "2026-10-25 13:15:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "12",
+   "date": "2026-10-31 19:45:00",
+   "pastMatch": "1"
+  },
+  {
+   "turn": "13",
+   "date": "2026-11-08 15:30:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "14",
+   "date": "2026-11-22 13:30:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "15",
+   "date": "2026-11-27 19:30:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "16",
+   "date": "2026-12-06 16:30:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "17",
+   "date": "2026-12-12 17:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "18",
+   "date": "2026-12-19 13:30:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "19",
+   "date": "2027-01-30 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "20",
+   "date": "2027-02-06 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "21",
+   "date": "2027-02-13 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "22",
+   "date": "2027-02-20 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "23",
+   "date": "2027-02-27 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "24",
+   "date": "2027-03-06 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "25",
+   "date": "2027-03-13 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "26",
+   "date": "2027-03-20 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "27",
+   "date": "2027-04-03 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "28",
+   "date": "2027-04-10 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "29",
+   "date": "2027-04-17 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "30",
+   "date": "2027-04-24 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "31",
+   "date": "2027-05-01 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "32",
+   "date": "2027-05-15 00:00:00",
+   "pastMatch": "0"
+  },
+  {
+   "turn": "33",
+   "date": "2027-05-22 00:00:00",
+   "pastMatch": "0"
+  }
+ ],
+ "actualTurn": {
+  "turn": "12"
+ }
+}

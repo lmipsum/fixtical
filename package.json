@@ -1,0 +1,43 @@
+{
+  "name": "fixtical",
+  "version": "1.0.0",
+  "description": "Match calendars (iCalendar feeds) for Hungarian football, water polo and volleyball teams.",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lmipsum/fixtical.git"
+  },
+  "homepage": "https://github.com/lmipsum/fixtical#readme",
+  "bugs": {
+    "url": "https://github.com/lmipsum/fixtical/issues"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "bundle": "node scripts/bundle.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "fixtical": "node src/cli.ts"
+  },
+  "dependencies": {
+    "css-select": "7.0.0",
+    "domhandler": "6.0.1",
+    "domutils": "4.0.2",
+    "htmlparser2": "12.0.0",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "5.1.0",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}

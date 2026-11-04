@@ -1,0 +1,38 @@
+name: fixtical
+description: Match calendars (iCalendar feeds) for Hungarian football, water polo and volleyball teams.
+author: lmipsum
+branding:
+  icon: calendar
+  color: purple
+
+inputs:
+  config:
+    description: Path of the configuration file.
+    default: fixtical.yml
+  out:
+    description: Directory the feeds are written to.
+    default: public
+  dispatch:
+    description: 'The client_payload of a repository dispatch, as JSON: {"producer": ..., "annotations": {...}} adds lines to match days.'
+    default: ""
+  notify_test:
+    description: '"true" sends a test notification to the ntfy topic.'
+    default: "false"
+  site_url:
+    description: Address the output directory is published at (e.g. GitHub Pages); adds one-click subscribe links to its page.
+    default: ""
+  state_url:
+    description: Address of the previously published state.json (e.g. on GitHub Pages), read back before the build.
+    default: ""
+
+outputs:
+  configured:
+    description: '"false" when there is nothing to build.'
+  target:
+    description: '"gist" when the feeds were published to a gist, else "directory".'
+  changed:
+    description: Number of gist files updated.
+
+runs:
+  using: node24
+  main: dist/action.js
