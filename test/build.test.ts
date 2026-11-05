@@ -48,6 +48,20 @@ describe("build", () => {
     ]);
   });
 
+  it("reads a page once for every calendar that needs it", async () => {
+    const config = loadConfig(`calendars:
+  - club: 14374
+    slug: a
+  - club: 14374
+    slug: b
+    include: [league]
+`);
+    const { client, seen } = fakeClient(ROUTES);
+    const { results } = await build(config, emptyState(), client, NOW);
+    expect(results.map((r) => r.error)).toEqual([null, null]);
+    expect(seen.length).toBe(new Set(seen).size);
+  });
+
   it("treats an empty schedule as a failure", async () => {
     const routes: Route[] = [
       [

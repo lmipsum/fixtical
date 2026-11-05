@@ -7,7 +7,7 @@ export type Resolved = Record<string, unknown>;
 
 export interface SourceContext {
   client: Client;
-  /** Pages fetched during this build, shared by resolve() and fixtures(). */
+  /** Pages fetched during this build, shared by every calendar's resolve() and fixtures(). */
   pages: Map<string, string>;
   /** API keys of the sources that need one, by source name. */
   keys?: Readonly<Record<string, string | undefined>>;

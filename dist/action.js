@@ -13305,21 +13305,20 @@ var SOURCES = /* @__PURE__ */ new Map([
 
 // src/build.ts
 var STALE_AFTER_MS = 2 * 86400 * 1e3;
-async function fetchCalendar(cal, previous, client, keys) {
+async function fetchCalendar(cal, previous, ctx) {
   const source = SOURCES.get(cal.source);
   if (!source) throw new SourceError(`unknown source "${cal.source}"`);
   const problems = source.validate(cal);
   if (problems.length) throw new SourceError(problems.join("; "));
-  const ctx = { client, pages: /* @__PURE__ */ new Map(), keys };
   const resolved = await source.resolve(cal, previous?.resolved ?? null, ctx);
   const fixtures = await source.fixtures(resolved, ctx);
   if (!fixtures.length) throw new SourceError("no fixtures found");
   return { resolved, fixtures };
 }
-async function refresh(cal, previous, client, now, keys) {
+async function refresh(cal, previous, ctx, now) {
   const entry = previous ?? { resolved: null, fixtures: [], updatedAt: null, failingSince: null };
   try {
-    const { resolved, fixtures } = await fetchCalendar(cal, previous, client, keys);
+    const { resolved, fixtures } = await fetchCalendar(cal, previous, ctx);
     const changed = JSON.stringify(previous?.fixtures) !== JSON.stringify(fixtures);
     return {
       entry: {
@@ -13336,10 +13335,11 @@ async function refresh(cal, previous, client, now, keys) {
   }
 }
 async function build(config, state, client, now, options = {}) {
+  const ctx = { client, pages: /* @__PURE__ */ new Map(), keys: options.keys };
   const refreshed = [];
   for (const cal of config.calendars) {
     const previous = state.calendars[cal.slug];
-    refreshed.push({ cal, previous, ...await refresh(cal, previous, client, now, options.keys) });
+    refreshed.push({ cal, previous, ...await refresh(cal, previous, ctx, now) });
   }
   const stadiums = /* @__PURE__ */ new Map();
   for (const { entry } of refreshed)

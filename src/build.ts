@@ -6,6 +6,7 @@ import { foundPlaces, type Geocoder } from "./geocode.ts";
 import { type Client, SourceError } from "./http.ts";
 import type { Fixture } from "./model.ts";
 import { SOURCES } from "./sources/index.ts";
+import type { SourceContext } from "./sources/types.ts";
 import type { CalendarState, State } from "./state.ts";
 import { ownTeam, teamName } from "./team-names.ts";
 import { TIMEZONE } from "./time.ts";
@@ -41,14 +42,12 @@ export interface BuildOptions {
 async function fetchCalendar(
   cal: CalendarConfig,
   previous: CalendarState | undefined,
-  client: Client,
-  keys: BuildOptions["keys"],
+  ctx: SourceContext,
 ): Promise<{ resolved: CalendarState["resolved"]; fixtures: Fixture[] }> {
   const source = SOURCES.get(cal.source);
   if (!source) throw new SourceError(`unknown source "${cal.source}"`);
   const problems = source.validate(cal);
   if (problems.length) throw new SourceError(problems.join("; "));
-  const ctx = { client, pages: new Map<string, string>(), keys };
   const resolved = await source.resolve(cal, previous?.resolved ?? null, ctx);
   const fixtures = await source.fixtures(resolved, ctx);
   if (!fixtures.length) throw new SourceError("no fixtures found");
@@ -59,13 +58,12 @@ async function fetchCalendar(
 async function refresh(
   cal: CalendarConfig,
   previous: CalendarState | undefined,
-  client: Client,
+  ctx: SourceContext,
   now: Date,
-  keys: BuildOptions["keys"],
 ): Promise<{ entry: CalendarState; error: string | null }> {
   const entry = previous ?? { resolved: null, fixtures: [], updatedAt: null, failingSince: null };
   try {
-    const { resolved, fixtures } = await fetchCalendar(cal, previous, client, keys);
+    const { resolved, fixtures } = await fetchCalendar(cal, previous, ctx);
     const changed = JSON.stringify(previous?.fixtures) !== JSON.stringify(fixtures);
     return {
       entry: {
@@ -91,10 +89,12 @@ export async function build(
   now: Date,
   options: BuildOptions = {},
 ): Promise<{ results: CalendarResult[]; state: State }> {
+  // One page cache for every calendar: calendars of one club read its pages once.
+  const ctx: SourceContext = { client, pages: new Map(), keys: options.keys };
   const refreshed = [];
   for (const cal of config.calendars) {
     const previous = state.calendars[cal.slug];
-    refreshed.push({ cal, previous, ...(await refresh(cal, previous, client, now, options.keys)) });
+    refreshed.push({ cal, previous, ...(await refresh(cal, previous, ctx, now)) });
   }
 
   // Venues of every calendar at once: a venue shared by calendars is looked up once.
