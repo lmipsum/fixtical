@@ -28,10 +28,6 @@ inputs:
 outputs:
   configured:
     description: '"false" when there is nothing to build.'
-  target:
-    description: '"gist" when the feeds were published to a gist, else "directory".'
-  changed:
-    description: Number of gist files updated.
 
 runs:
   using: node24

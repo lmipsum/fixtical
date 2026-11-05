@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { build } from "../../src/build.ts";
-import { loadConfig } from "../../src/config.ts";
-import { changedFiles, Gist, GistError } from "../../src/publish/gist.ts";
-import { emptyState } from "../../src/state.ts";
-import { fakeClient, UJPEST_ROUTES } from "../helpers.ts";
-
-const CONFIG = loadConfig("calendars:\n  - club: 14374\n    slug: ujpest\n");
+import { Gist, GistError } from "../../src/publish/gist.ts";
 
 function api(answers: Record<string, () => Response>) {
   const calls: { url: string; init: RequestInit }[] = [];
@@ -59,16 +53,5 @@ describe("gist", () => {
         Response.json({ files: { x: { truncated: true, raw_url: "https://raw.example/x" } } }),
     });
     await expect(new Gist("t", "abc", raw.fetchFn).files()).rejects.toThrow("gist file: HTTP 404");
-  });
-
-  it("changes only the files whose content changed", async () => {
-    const now = new Date("2026-11-03T08:00:00Z");
-    const first = await build(CONFIG, emptyState(), fakeClient(UJPEST_ROUTES).client, now);
-    const all = changedFiles(new Map(), first.results, first.state);
-    expect(Object.keys(all)).toEqual(["ujpest.ics", "ujpest.json", "state.json"]);
-
-    const later = new Date("2026-11-03T14:00:00Z");
-    const second = await build(CONFIG, first.state, fakeClient(UJPEST_ROUTES).client, later);
-    expect(changedFiles(new Map(Object.entries(all)), second.results, second.state)).toEqual({});
   });
 });

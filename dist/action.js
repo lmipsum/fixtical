@@ -7442,9 +7442,6 @@ function updatedAt(text3) {
     return Number.NaN;
   }
 }
-function producerOf(fileName) {
-  return fileName.replace(/.json$/, "").replace(/^annotations-?/, "") || fileName;
-}
 function dispatchedNote(payload) {
   if (!payload || payload === "null") return null;
   let data;
@@ -7459,6 +7456,22 @@ function dispatchedNote(payload) {
   const text3 = JSON.stringify(data.annotations);
   if (text3.length > MAX_NOTE_LENGTH) return "dispatch: annotations too large";
   return { producer, text: text3 };
+}
+function collectNotes(kept, dispatch, now) {
+  const files = new Map(Object.entries(kept));
+  const problems = [];
+  const sent = dispatchedNote(dispatch);
+  if (typeof sent === "string") problems.push(sent);
+  else if (sent) files.set(sent.producer, sent.text);
+  const annotations = /* @__PURE__ */ new Map();
+  const notes = {};
+  for (const [producer, text3] of [...files].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const problem of addAnnotations(annotations, text3, now, ANNOTATIONS_MAX_AGE_MS)) {
+      problems.push(`sent by ${producer}: ${problem}`);
+    }
+    if (now.getTime() - updatedAt(text3) <= ANNOTATIONS_MAX_AGE_MS) notes[producer] = text3;
+  }
+  return { annotations, notes, problems };
 }
 
 // src/time.ts
@@ -7648,9 +7661,6 @@ function buildIcs(meta, fixtures, now, extras = {}) {
   ];
   return `${lines.map(foldLine).join("\r\n")}\r
 `;
-}
-function feedContent(ics) {
-  return ics.split("\r\n").filter((line) => !line.startsWith("DTSTAMP:")).join("\r\n");
 }
 
 // src/formats/json.ts
@@ -13280,8 +13290,7 @@ var CALENDAR_KEYS = /* @__PURE__ */ new Set([
   "federation",
   "category",
   "competition",
-  "include",
-  "gist"
+  "include"
 ]);
 function isRecord2(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -13347,8 +13356,6 @@ function calendar(raw, where, problems) {
       include = { league: list2.includes("league"), cup: list2.includes("cup") };
     }
   }
-  const gist = raw.gist ?? true;
-  if (typeof gist !== "boolean") problems.push(`${where}.gist: true or false`);
   const slug = str("slug") ?? defaultSlug(teamUrl, club, team, category ?? "men");
   if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
   if (problems.length > before || !category) return null;
@@ -13362,8 +13369,7 @@ function calendar(raw, where, problems) {
     federation: int("federation") ?? 0,
     category,
     competition,
-    include,
-    gist
+    include
   };
 }
 function loadConfig(yamlText) {
@@ -13683,31 +13689,6 @@ var Gist = class {
     await this.call("PATCH", JSON.stringify({ files: body }));
   }
 };
-function withoutTimestamp(json) {
-  if (!json) return "";
-  try {
-    const { generated_at: _, ...rest } = JSON.parse(json);
-    return JSON.stringify(rest);
-  } catch {
-    return "";
-  }
-}
-function changedFiles(existing, results, state) {
-  const files = {};
-  for (const r of results) {
-    if (!r.ics || !r.json) continue;
-    const json = `${JSON.stringify(r.json, null, 2)}
-`;
-    const ics = `${r.slug}.ics`;
-    const jsonName = `${r.slug}.json`;
-    if (feedContent(existing.get(ics) ?? "") !== feedContent(r.ics)) files[ics] = r.ics;
-    if (withoutTimestamp(existing.get(jsonName)) !== withoutTimestamp(json)) files[jsonName] = json;
-  }
-  const stateText = `${JSON.stringify(state)}
-`;
-  if ((existing.get(STATE_FILE) ?? "") !== stateText) files[STATE_FILE] = stateText;
-  return files;
-}
 
 // src/action.ts
 var MESSAGES = {
@@ -13788,33 +13769,11 @@ async function run(env = process.env, client = new Client(), fetchFn = defaultFe
     return 0;
   }
   const gist = token && gistId ? new Gist(token, gistId, fetchFn) : null;
-  let gistFiles = null;
   try {
-    gistFiles = gist ? await gist.files() : null;
+    const gistFiles = gist ? await gist.files() : null;
     const state = await previousState(gistFiles, input(env, "state_url"), out, fetchFn);
     const now = /* @__PURE__ */ new Date();
-    const annotations = /* @__PURE__ */ new Map();
-    const problems = [];
-    const producers = /* @__PURE__ */ new Map();
-    const offer = (producer, text3, label, kept2) => {
-      const current = producers.get(producer);
-      if (!current || !(updatedAt(current.text) >= updatedAt(text3)))
-        producers.set(producer, { text: text3, label, kept: kept2 });
-    };
-    for (const [producer, text3] of Object.entries(state.notes ?? {}))
-      offer(producer, text3, `sent by ${producer}`, true);
-    for (const [name, text3] of gistFiles ?? []) {
-      if (/^annotations[^/]*\.json$/.test(name)) offer(producerOf(name), text3, `gist ${name}`, false);
-    }
-    const sent = dispatchedNote(input(env, "dispatch"));
-    if (typeof sent === "string") problems.push(sent);
-    else if (sent)
-      producers.set(sent.producer, { text: sent.text, label: `sent by ${sent.producer}`, kept: true });
-    for (const [, { text: text3, label }] of [...producers].sort(([a], [b]) => a.localeCompare(b))) {
-      for (const problem of addAnnotations(annotations, text3, now, ANNOTATIONS_MAX_AGE_MS)) {
-        problems.push(`${label}: ${problem}`);
-      }
-    }
+    const { annotations, notes, problems } = collectNotes(state.notes ?? {}, input(env, "dispatch"), now);
     for (const problem of problems) command("warning", problem, "annotations");
     const geocoder = new Geocoder({ googleKey, fetch: fetchFn });
     const { results, state: next } = await build(config, state, client, now, {
@@ -13822,34 +13781,21 @@ async function run(env = process.env, client = new Client(), fetchFn = defaultFe
       geocoder,
       keys: { mvlsz: mvlszKey }
     });
-    const kept = [...producers].filter(
-      ([, p]) => p.kept && now.getTime() - updatedAt(p.text) <= ANNOTATIONS_MAX_AGE_MS
-    );
-    if (kept.length) next.notes = Object.fromEntries(kept.map(([producer, p]) => [producer, p.text]));
+    if (Object.keys(notes).length) next.notes = notes;
     await writeDirectory(out, results, next, { siteUrl: input(env, "site_url") });
-    let changed = [];
-    if (gist && gistFiles) {
-      const inGist = new Set(config.calendars.filter((c) => c.gist).map((c) => c.slug));
-      const files = changedFiles(
-        gistFiles,
-        results.filter((r) => inGist.has(r.slug)),
-        next
-      );
-      changed = Object.keys(files);
-      if (changed.length) await gist.update(files);
-    }
+    const stateText = `${JSON.stringify(next)}
+`;
+    if (gist && gistFiles?.get(STATE_FILE) !== stateText) await gist.update({ [STATE_FILE]: stateText });
     if (notifyTopic) await notify(results, notifyTopic, fetchFn);
     if (input(env, "notify_test") === "true") {
-      const sent2 = notifyTopic && await sendNtfy(notifyTopic, "fixtical", MESSAGES.test, fetchFn);
-      command(sent2 ? "notice" : "warning", sent2 ? "Test notification sent." : "Test notification not sent.");
+      const sent = notifyTopic && await sendNtfy(notifyTopic, "fixtical", MESSAGES.test, fetchFn);
+      command(sent ? "notice" : "warning", sent ? "Test notification sent." : "Test notification not sent.");
     }
     for (const r of results) {
       if (r.error) command(r.ics ? "warning" : "error", r.error, r.slug);
     }
     await addSummary(env, summaryTable(results));
     await setOutput(env, "configured", "true");
-    await setOutput(env, "target", gist ? "gist" : "directory");
-    await setOutput(env, "changed", String(changed.length));
     return results.some((r) => !r.ics) ? 1 : 0;
   } catch (e) {
     if (!(e instanceof GistError)) throw e;

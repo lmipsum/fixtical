@@ -13190,8 +13190,7 @@ var CALENDAR_KEYS = /* @__PURE__ */ new Set([
   "federation",
   "category",
   "competition",
-  "include",
-  "gist"
+  "include"
 ]);
 function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -13257,8 +13256,6 @@ function calendar(raw, where, problems) {
       include = { league: list2.includes("league"), cup: list2.includes("cup") };
     }
   }
-  const gist = raw.gist ?? true;
-  if (typeof gist !== "boolean") problems.push(`${where}.gist: true or false`);
   const slug = str("slug") ?? defaultSlug(teamUrl, club, team, category ?? "men");
   if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
   if (problems.length > before || !category) return null;
@@ -13272,8 +13269,7 @@ function calendar(raw, where, problems) {
     federation: int("federation") ?? 0,
     category,
     competition,
-    include,
-    gist
+    include
   };
 }
 function loadConfig(yamlText) {

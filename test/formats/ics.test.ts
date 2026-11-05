@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildIcs,
-  escapeText,
-  feedContent,
-  foldLine,
-  locationLines,
-  summary,
-} from "../../src/formats/ics.ts";
+import { buildIcs, escapeText, foldLine, locationLines, summary } from "../../src/formats/ics.ts";
 import { makeFixture } from "../helpers.ts";
 
 const META = {
@@ -58,13 +51,6 @@ describe("iCalendar", () => {
   it("leaves out the colour when there is none", () => {
     const ics = buildIcs({ ...META, color: null }, [], NOW);
     expect(ics).not.toContain("X-APPLE-CALENDAR-COLOR");
-  });
-
-  it("compares feeds without their generation time", () => {
-    const a = buildIcs(META, [makeFixture()], NOW);
-    const b = buildIcs(META, [makeFixture()], new Date("2026-11-04T08:00:00Z"));
-    expect(a).not.toBe(b);
-    expect(feedContent(a)).toBe(feedContent(b));
   });
 });
 

@@ -145,11 +145,3 @@ export function buildIcs(
   ];
   return `${lines.map(foldLine).join("\r\n")}\r\n`;
 }
-
-/** The feed without its generation time: what decides whether it changed. */
-export function feedContent(ics: string): string {
-  return ics
-    .split("\r\n")
-    .filter((line) => !line.startsWith("DTSTAMP:"))
-    .join("\r\n");
-}

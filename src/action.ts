@@ -1,19 +1,12 @@
 import { appendFile } from "node:fs/promises";
-import {
-  ANNOTATIONS_MAX_AGE_MS,
-  type Annotations,
-  addAnnotations,
-  dispatchedNote,
-  producerOf,
-  updatedAt,
-} from "./annotations.ts";
+import { collectNotes } from "./annotations.ts";
 import { build, type CalendarResult } from "./build.ts";
 import { type Config, ConfigError, readConfig } from "./config.ts";
 import { Geocoder } from "./geocode.ts";
 import { Client, defaultFetch, type FetchLike } from "./http.ts";
 import { isTopic, sendNtfy } from "./notify/ntfy.ts";
 import { writeDirectory } from "./publish/directory.ts";
-import { changedFiles, Gist, GistError } from "./publish/gist.ts";
+import { Gist, GistError } from "./publish/gist.ts";
 import { parseState, readState, STATE_FILE, type State } from "./state.ts";
 
 type Env = NodeJS.ProcessEnv;
@@ -91,7 +84,7 @@ async function notify(results: readonly CalendarResult[], topic: string, fetchFn
 
 /**
  * The action: builds the configured calendars into `out` and, with a gist
- * token and id, publishes them to that gist. Credentials come from the
+ * token and id, keeps the state in that gist. Credentials come from the
  * environment (FIXTICAL_GIST_TOKEN, FIXTICAL_GIST_ID, FIXTICAL_NTFY_TOPIC).
  */
 export async function run(
@@ -128,34 +121,11 @@ export async function run(
   }
 
   const gist = token && gistId ? new Gist(token, gistId, fetchFn) : null;
-  let gistFiles: Map<string, string> | null = null;
   try {
-    gistFiles = gist ? await gist.files() : null;
+    const gistFiles = gist ? await gist.files() : null;
     const state = await previousState(gistFiles, input(env, "state_url"), out, fetchFn);
     const now = new Date();
-    const annotations: Annotations = new Map();
-    const problems: string[] = [];
-    // One file per producer: the newest of what it sent with a dispatch and what it wrote to the gist.
-    const producers = new Map<string, { text: string; label: string; kept: boolean }>();
-    const offer = (producer: string, text: string, label: string, kept: boolean) => {
-      const current = producers.get(producer);
-      if (!current || !(updatedAt(current.text) >= updatedAt(text)))
-        producers.set(producer, { text, label, kept });
-    };
-    for (const [producer, text] of Object.entries(state.notes ?? {}))
-      offer(producer, text, `sent by ${producer}`, true);
-    for (const [name, text] of gistFiles ?? []) {
-      if (/^annotations[^/]*\.json$/.test(name)) offer(producerOf(name), text, `gist ${name}`, false);
-    }
-    const sent = dispatchedNote(input(env, "dispatch"));
-    if (typeof sent === "string") problems.push(sent);
-    else if (sent)
-      producers.set(sent.producer, { text: sent.text, label: `sent by ${sent.producer}`, kept: true });
-    for (const [, { text, label }] of [...producers].sort(([a], [b]) => a.localeCompare(b))) {
-      for (const problem of addAnnotations(annotations, text, now, ANNOTATIONS_MAX_AGE_MS)) {
-        problems.push(`${label}: ${problem}`);
-      }
-    }
+    const { annotations, notes, problems } = collectNotes(state.notes ?? {}, input(env, "dispatch"), now);
     for (const problem of problems) command("warning", problem, "annotations");
     const geocoder = new Geocoder({ googleKey, fetch: fetchFn });
     const { results, state: next } = await build(config, state, client, now, {
@@ -163,22 +133,11 @@ export async function run(
       geocoder,
       keys: { mvlsz: mvlszKey },
     });
-    const kept = [...producers].filter(
-      ([, p]) => p.kept && now.getTime() - updatedAt(p.text) <= ANNOTATIONS_MAX_AGE_MS,
-    );
-    if (kept.length) next.notes = Object.fromEntries(kept.map(([producer, p]) => [producer, p.text]));
+    if (Object.keys(notes).length) next.notes = notes;
     await writeDirectory(out, results, next, { siteUrl: input(env, "site_url") });
-    let changed: string[] = [];
-    if (gist && gistFiles) {
-      const inGist = new Set(config.calendars.filter((c) => c.gist).map((c) => c.slug));
-      const files = changedFiles(
-        gistFiles,
-        results.filter((r) => inGist.has(r.slug)),
-        next,
-      );
-      changed = Object.keys(files);
-      if (changed.length) await gist.update(files);
-    }
+    // The gist keeps the state with the annotations, which the published one leaves out.
+    const stateText = `${JSON.stringify(next)}\n`;
+    if (gist && gistFiles?.get(STATE_FILE) !== stateText) await gist.update({ [STATE_FILE]: stateText });
     if (notifyTopic) await notify(results, notifyTopic, fetchFn);
     if (input(env, "notify_test") === "true") {
       const sent = notifyTopic && (await sendNtfy(notifyTopic, "fixtical", MESSAGES.test, fetchFn));
@@ -190,8 +149,6 @@ export async function run(
     }
     await addSummary(env, summaryTable(results));
     await setOutput(env, "configured", "true");
-    await setOutput(env, "target", gist ? "gist" : "directory");
-    await setOutput(env, "changed", String(changed.length));
     return results.some((r) => !r.ics) ? 1 : 0;
   } catch (e) {
     if (!(e instanceof GistError)) throw e;

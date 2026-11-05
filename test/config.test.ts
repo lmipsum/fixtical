@@ -27,7 +27,6 @@ describe("configuration", () => {
           category: "men",
           competition: null,
           include: { league: true, cup: true },
-          gist: true,
         },
       ],
     });
@@ -44,7 +43,6 @@ calendars:
     category: futsal
     competition: "NB I"
     include: [league]
-    gist: false
 `);
     expect(config.calendars[0]).toMatchObject({
       slug: "ujpest-futsal",
@@ -52,7 +50,6 @@ calendars:
       category: "futsal",
       competition: "NB I",
       include: { league: true, cup: false },
-      gist: false,
     });
   });
 
@@ -87,7 +84,6 @@ calendars:
     competition: "("
     color: purple
     include: [friendly]
-    gist: "no"
     slug: "Not OK"
     wat: 1
   - team_url: http://example.com
@@ -100,7 +96,6 @@ calendars:
       "calendars[0].competition: not a valid regular expression",
       "calendars[0].color: expected #rrggbb",
       "calendars[0].include: a list of league and/or cup",
-      "calendars[0].gist: true or false",
       "calendars[0].slug: lowercase letters, digits and dashes",
       "calendars[1].team_url: expected an https link",
     ]);

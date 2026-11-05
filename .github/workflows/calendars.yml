@@ -2,12 +2,11 @@ name: calendars
 
 # Builds the calendars of fixtical.yml.
 # Also on a repository_dispatch of type "annotations": a tool sends its
-# annotations with it, or asks for a rebuild after writing its annotation file
-# into the gist.
-# With the FIXTICAL_GIST_TOKEN and FIXTICAL_GIST_ID secrets the feeds go to
-# that gist (but those with gist: false). Every feed is also uploaded as a
-# Pages artifact and, when the FIXTICAL_PAGES variable is "true" (and Pages
-# uses GitHub Actions as its source), deployed to GitHub Pages. Without a
+# annotations with it.
+# With the FIXTICAL_GIST_TOKEN and FIXTICAL_GIST_ID secrets the state, with
+# the annotations, is kept in that gist. Every feed is uploaded as a Pages
+# artifact and, when the FIXTICAL_PAGES variable is "true" (and Pages uses
+# GitHub Actions as its source), deployed to GitHub Pages. Without a
 # configuration nothing runs.
 # The secrets may be the production environment's, limited to the default
 # branch; repository secrets work as well.
@@ -22,7 +21,7 @@ on:
         description: Send a test notification
         type: boolean
         default: false
-  # Another tool changed its annotation file in the gist.
+  # Another tool sends its annotations.
   repository_dispatch:
     types: [annotations]
   push:
@@ -48,7 +47,6 @@ jobs:
       deployment: false
     outputs:
       configured: ${{ steps.feeds.outputs.configured }}
-      target: ${{ steps.feeds.outputs.target }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

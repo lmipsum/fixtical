@@ -149,9 +149,12 @@ rebuilt at once. The `annotations` object looks like this:
 
 The lines and the link go into the description of that day's match. Lines are plain text (at most five,
 200 characters each), the link must be `https`, a day without a match is ignored, and annotations whose
-`updated_at` is more than 24 hours old are skipped. The calendars keep the latest annotations of each
-producer, unpublished, until they are 24 hours old; newer ones replace them. Several
-producers are merged in name order.
+`updated_at` is more than 24 hours old are skipped. Several producers are merged in name order.
+
+The annotations last until the next build, unless the state is kept privately: with the repository secrets
+`FIXTICAL_GIST_ID` (a secret gist's id) and `FIXTICAL_GIST_TOKEN` (a token allowed to write gists), the state
+goes to that gist, and the calendars keep the latest annotations of each producer, unpublished, until they
+are 24 hours old; newer ones replace them.
 
 ## JSON
 

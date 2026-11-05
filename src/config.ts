@@ -18,8 +18,6 @@ export interface CalendarConfig {
   /** Regular expression on the competition name, narrowing the category. */
   competition: string | null;
   include: { league: boolean; cup: boolean };
-  /** Whether the feed also goes to the gist, when there is one (else only to the output directory). */
-  gist: boolean;
 }
 
 export interface Config {
@@ -49,7 +47,6 @@ const CALENDAR_KEYS = new Set([
   "category",
   "competition",
   "include",
-  "gist",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -134,9 +131,6 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
     }
   }
 
-  const gist = raw.gist ?? true;
-  if (typeof gist !== "boolean") problems.push(`${where}.gist: true or false`);
-
   const slug = str("slug") ?? defaultSlug(teamUrl, club, team, category ?? "men");
   if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
 
@@ -152,7 +146,6 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
     category,
     competition,
     include,
-    gist: gist as boolean,
   };
 }
 

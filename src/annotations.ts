@@ -95,11 +95,6 @@ export function updatedAt(text: string): number {
   }
 }
 
-/** The producer an annotation file belongs to, from its name: annotations-<producer>.json. */
-export function producerOf(fileName: string): string {
-  return fileName.replace(/.json$/, "").replace(/^annotations-?/, "") || fileName;
-}
-
 /**
  * The annotation file a producer sent with a repository dispatch, whose
  * client_payload is {"producer": "<name>", "annotations": {updated_at, calendars}}.
@@ -119,4 +114,30 @@ export function dispatchedNote(payload: string): { producer: string; text: strin
   const text = JSON.stringify(data.annotations);
   if (text.length > MAX_NOTE_LENGTH) return "dispatch: annotations too large";
   return { producer, text };
+}
+
+/**
+ * The annotations of a build: the files kept from earlier dispatches, by
+ * producer, with the one this run's dispatch carries replacing its producer's.
+ * Returns them by calendar, the files young enough to keep, and the problems found.
+ */
+export function collectNotes(
+  kept: Readonly<Record<string, string>>,
+  dispatch: string,
+  now: Date,
+): { annotations: Annotations; notes: Record<string, string>; problems: string[] } {
+  const files = new Map(Object.entries(kept));
+  const problems: string[] = [];
+  const sent = dispatchedNote(dispatch);
+  if (typeof sent === "string") problems.push(sent);
+  else if (sent) files.set(sent.producer, sent.text);
+  const annotations: Annotations = new Map();
+  const notes: Record<string, string> = {};
+  for (const [producer, text] of [...files].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const problem of addAnnotations(annotations, text, now, ANNOTATIONS_MAX_AGE_MS)) {
+      problems.push(`sent by ${producer}: ${problem}`);
+    }
+    if (now.getTime() - updatedAt(text) <= ANNOTATIONS_MAX_AGE_MS) notes[producer] = text;
+  }
+  return { annotations, notes, problems };
 }
