@@ -22,3 +22,10 @@ export interface Fixture {
 export function kickoff(f: Fixture, timezone: string): Date | null {
   return f.time ? zonedToUtc(f.date, f.time, timezone) : null;
 }
+
+/** Fixtures in order: by day, then kick-off time (unset first), then id. */
+export function byKickoff(a: Fixture, b: Fixture): number {
+  return (
+    a.date.localeCompare(b.date) || (a.time ?? "").localeCompare(b.time ?? "") || a.id.localeCompare(b.id)
+  );
+}

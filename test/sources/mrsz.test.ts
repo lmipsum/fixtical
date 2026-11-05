@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CalendarConfig } from "../../src/config.ts";
 import { SourceError } from "../../src/http.ts";
-import { isCup, mrsz, parseMatches, parseSeasons, pickCompetitions } from "../../src/sources/mrsz.ts";
+import { mrsz, parseMatches, parseSeasons, pickCompetitions } from "../../src/sources/mrsz.ts";
 import { fakeClient, fixture, type Route } from "../helpers.ts";
 
 const home = fixture("mrsz/home.html");
@@ -46,7 +46,6 @@ describe("parsers", () => {
     expect(pickCompetitions(competitions, calendar({ include: { league: false, cup: true } }))).toHaveLength(
       1,
     );
-    expect(isCup("Női Magyar Kupa")).toBe(true);
   });
 
   it("reads the team's matches once each, with sets, venue and time when known", () => {

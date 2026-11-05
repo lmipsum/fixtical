@@ -1,3 +1,5 @@
+import { isRecord } from "./util.ts";
+
 /** Extra lines another tool adds to the event of a match day. */
 export interface Annotation {
   lines: string[];
@@ -14,10 +16,6 @@ const MAX_LINES = 5;
 const MAX_LINE_LENGTH = 200;
 const MAX_URL_LENGTH = 500;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /** A line as plain text: no control characters, single spaces, length-limited. */
 function cleanLine(value: unknown): string | null {

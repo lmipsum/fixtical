@@ -1,12 +1,11 @@
-import { selectAll, selectOne } from "css-select";
-import type { AnyNode, Element } from "domhandler";
+import type { Element } from "domhandler";
 import { getAttributeValue, textContent } from "domutils";
-import { parseDocument } from "htmlparser2";
-import type { CalendarConfig } from "../config.ts";
+import { type CalendarConfig, competitionPattern } from "../config.ts";
 import { SourceError } from "../http.ts";
-import type { Fixture } from "../model.ts";
+import { byKickoff, type Fixture } from "../model.ts";
 import { teamName } from "../team-names.ts";
-import type { Resolved, Source, SourceContext } from "./types.ts";
+import { all, dateTime, isCup, one, page, parse, type Root, text } from "./common.ts";
+import type { Resolved, Source } from "./types.ts";
 
 const SITE = "https://hvf-web.dataproject.com";
 const GENDER_WORDS = { men: "Férfi", women: "Női" } as const;
@@ -24,19 +23,9 @@ type MrszResolved = Resolved & {
   competitions: Competition[];
 };
 
-type Root = AnyNode | AnyNode[];
-
-const parse = (html: string): Root => parseDocument(html).children;
-const all = (root: Root, selector: string): Element[] => selectAll(selector, root);
-const one = (root: Root, selector: string): Element | null => selectOne(selector, root);
-const text = (root: Root, selector: string): string => {
-  const el = one(root, selector);
-  return el ? textContent(el).replace(/\s+/g, " ").trim() : "";
-};
-
-export function isCup(competition: string): boolean {
-  return /kupa/i.test(competition);
-}
+/** The text of the element `selector` finds, its whitespace collapsed. */
+const cell = (root: Root, selector: string): string =>
+  text(one(root, selector))?.replace(/\s+/g, " ").trim() ?? "";
 
 /** The newest season of the home page's competition menu and its competitions. */
 export function parseSeasons(html: string): { season: string; competitions: Competition[] } {
@@ -59,7 +48,7 @@ export function parseSeasons(html: string): { season: string; competitions: Comp
 /** The season's competitions that fit the calendar, leagues first. */
 export function pickCompetitions(competitions: readonly Competition[], cal: CalendarConfig): Competition[] {
   const word = GENDER_WORDS[cal.category as keyof typeof GENDER_WORDS];
-  const narrow = cal.competition ? new RegExp(cal.competition, "iu") : null;
+  const narrow = competitionPattern(cal);
   return competitions
     .filter((c) => c.name.includes(word) && (!narrow || narrow.test(c.name)))
     .filter((c) => (isCup(c.name) ? cal.include.cup : cal.include.league))
@@ -72,35 +61,24 @@ export function parseMatches(html: string, competition: Competition, team: strin
   for (const row of all(parse(html), "div[id$='_MatchRow']")) {
     const link = one(row, "[onclick*='mID=']");
     const id = /mID=(\d+)/.exec(link ? (getAttributeValue(link, "onclick") ?? "") : "")?.[1];
-    const home = text(row, "span[id$='HomeTeamName']");
-    const away = text(row, "span[id$='GuestTeamName']");
-    const when = DATE_RE.exec(text(row, "span[id$='DataOra']"));
+    const home = cell(row, "span[id$='HomeTeamName']");
+    const away = cell(row, "span[id$='GuestTeamName']");
+    const when = DATE_RE.exec(cell(row, "span[id$='DataOra']"));
     if (!id || fixtures.has(id) || !when || (home !== team && away !== team)) continue;
-    const [, y, mo, d, hh, mm] = when;
-    const two = (s: string | undefined) => String(s).padStart(2, "0");
-    const sets = [text(row, "span[id$='SetCasa']"), text(row, "span[id$='SetOspiti']")];
+    const sets = [cell(row, "span[id$='SetCasa']"), cell(row, "span[id$='SetOspiti']")];
     fixtures.set(id, {
       source: "mrsz",
       id,
-      date: `${y}-${two(mo)}-${two(d)}`,
-      time: hh !== undefined ? `${two(hh)}:${mm}` : null,
+      ...dateTime(when),
       home,
       away,
-      venue: teamName(text(row, "span[id$='Palasport']")),
+      venue: teamName(cell(row, "span[id$='Palasport']")),
       competition: competition.name,
       result: sets.every((s) => /^\d+$/.test(s)) ? `${sets[0]} - ${sets[1]}` : null,
       url: `${SITE}/MatchStatistics.aspx?mID=${id}&ID=${competition.id}`,
     });
   }
   return [...fixtures.values()];
-}
-
-async function page(ctx: SourceContext, url: string, what: string): Promise<string> {
-  const cached = ctx.pages.get(url);
-  if (cached !== undefined) return cached;
-  const body = await ctx.client.text(url, what);
-  ctx.pages.set(url, body);
-  return body;
 }
 
 function settingsKey(cal: CalendarConfig): string {
@@ -142,6 +120,6 @@ export const mrsz: Source = {
       const html = await page(ctx, `${SITE}/CompetitionMatches.aspx?ID=${competition.id}`, "match list");
       fixtures.push(...parseMatches(html, competition, resolved.team));
     }
-    return fixtures.sort((a, b) => `${a.date} ${a.time ?? ""}`.localeCompare(`${b.date} ${b.time ?? ""}`));
+    return fixtures.sort(byKickoff);
   },
 };

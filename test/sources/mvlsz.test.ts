@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CalendarConfig } from "../../src/config.ts";
 import { Client, SourceError } from "../../src/http.ts";
-import { isCup, mvlsz, pickTeams, toFixture } from "../../src/sources/mvlsz.ts";
+import { mvlsz, pickTeams, toFixture } from "../../src/sources/mvlsz.ts";
 import { fakeClient, fixture, type Route } from "../helpers.ts";
 
 const club = fixture("mvlsz/club.json");
@@ -48,7 +48,6 @@ describe("teams", () => {
     expect(league?.teams.map((t) => t.name)).toEqual(["E.ON Férfi OB I. Bajnokság"]);
     expect(pickTeams(entries, calendar({ competition: "Kupa" }))?.teams).toHaveLength(1);
     expect(pickTeams(entries, calendar({ competition: "nothing" }))).toBeNull();
-    expect(isCup("BENU Női Magyar Kupa")).toBe(true);
   });
 });
 

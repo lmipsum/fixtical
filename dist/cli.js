@@ -20,9 +20,9 @@ var __commonJS = (cb, mod) => function __require2() {
     throw mod = 0, e;
   }
 };
-var __export = (target, all3) => {
-  for (var name in all3)
-    __defProp(target, name, { get: all3[name], enumerable: true });
+var __export = (target, all2) => {
+  for (var name in all2)
+    __defProp(target, name, { get: all2[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -1008,14 +1008,14 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text3, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text2, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
-        return text3;
+        return text2;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
       const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text3.length <= endStep)
-        return text3;
+      if (text2.length <= endStep)
+        return text2;
       const folds = [];
       const escapedFolds = {};
       let end = lineWidth - indent.length;
@@ -1032,14 +1032,14 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text3, i, indent.length);
+        i = consumeMoreIndentedLines(text2, i, indent.length);
         if (i !== -1)
           end = i + endStep;
       }
-      for (let ch; ch = text3[i += 1]; ) {
+      for (let ch; ch = text2[i += 1]; ) {
         if (mode === FOLD_QUOTED && ch === "\\") {
           escStart = i;
-          switch (text3[i + 1]) {
+          switch (text2[i + 1]) {
             case "x":
               i += 3;
               break;
@@ -1056,12 +1056,12 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text3, i, indent.length);
+            i = consumeMoreIndentedLines(text2, i, indent.length);
           end = i + indent.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text3[i + 1];
+            const next = text2[i + 1];
             if (next && next !== " " && next !== "\n" && next !== "	")
               split = i;
           }
@@ -1073,12 +1073,12 @@ var require_foldFlowLines = __commonJS({
             } else if (mode === FOLD_QUOTED) {
               while (prev === " " || prev === "	") {
                 prev = ch;
-                ch = text3[i += 1];
+                ch = text2[i += 1];
                 overflow = true;
               }
               const j = i > escEnd + 1 ? i - 2 : escStart - 1;
               if (escapedFolds[j])
-                return text3;
+                return text2;
               folds.push(j);
               escapedFolds[j] = true;
               end = j + endStep;
@@ -1093,39 +1093,39 @@ var require_foldFlowLines = __commonJS({
       if (overflow && onOverflow)
         onOverflow();
       if (folds.length === 0)
-        return text3;
+        return text2;
       if (onFold)
         onFold();
-      let res = text3.slice(0, folds[0]);
+      let res = text2.slice(0, folds[0]);
       for (let i2 = 0; i2 < folds.length; ++i2) {
-        const fold3 = folds[i2];
-        const end2 = folds[i2 + 1] || text3.length;
-        if (fold3 === 0)
+        const fold2 = folds[i2];
+        const end2 = folds[i2 + 1] || text2.length;
+        if (fold2 === 0)
           res = `
-${indent}${text3.slice(0, end2)}`;
+${indent}${text2.slice(0, end2)}`;
         else {
-          if (mode === FOLD_QUOTED && escapedFolds[fold3])
-            res += `${text3[fold3]}\\`;
+          if (mode === FOLD_QUOTED && escapedFolds[fold2])
+            res += `${text2[fold2]}\\`;
           res += `
-${indent}${text3.slice(fold3 + 1, end2)}`;
+${indent}${text2.slice(fold2 + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text3, i, indent) {
+    function consumeMoreIndentedLines(text2, i, indent) {
       let end = i;
       let start = i + 1;
-      let ch = text3[start];
+      let ch = text2[start];
       while (ch === " " || ch === "	") {
         if (i < start + indent) {
-          ch = text3[++i];
+          ch = text2[++i];
         } else {
           do {
-            ch = text3[++i];
+            ch = text2[++i];
           } while (ch && ch !== "\n");
           end = i;
           start = i + 1;
-          ch = text3[start];
+          ch = text2[start];
         }
       }
       return end;
@@ -4746,8 +4746,8 @@ var require_resolve_flow_scalar = __commonJS({
         if (ch === "\r" && source[i + 1] === "\n")
           continue;
         if (ch === "\n") {
-          const { fold: fold3, offset } = foldNewline(source, i);
-          res += fold3;
+          const { fold: fold2, offset } = foldNewline(source, i);
+          res += fold2;
           i = offset;
         } else if (ch === "\\") {
           let next = source[++i];
@@ -4787,19 +4787,19 @@ var require_resolve_flow_scalar = __commonJS({
       return res;
     }
     function foldNewline(source, offset) {
-      let fold3 = "";
+      let fold2 = "";
       let ch = source[offset + 1];
       while (ch === " " || ch === "	" || ch === "\n" || ch === "\r") {
         if (ch === "\r" && source[offset + 2] !== "\n")
           break;
         if (ch === "\n")
-          fold3 += "\n";
+          fold2 += "\n";
         offset += 1;
         ch = source[offset + 1];
       }
-      if (!fold3)
-        fold3 = " ";
-      return { fold: fold3, offset };
+      if (!fold2)
+        fold2 = " ";
+      return { fold: fold2, offset };
     }
     var escapeCodes = {
       "0": "\0",
@@ -7271,7 +7271,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse5(src, reviver, options) {
+    function parse4(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -7312,7 +7312,7 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document2.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse5;
+    exports.parse = parse4;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument2;
     exports.stringify = stringify;
@@ -7374,223 +7374,15 @@ var require_dist = __commonJS({
 // src/cli.ts
 import { parseArgs } from "node:util";
 
-// src/time.ts
-var TIMEZONE = "Europe/Budapest";
-var DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
-var TIME_RE = /^(\d{2}):(\d{2})$/;
-function parts(re, text3, what) {
-  const m = re.exec(text3);
-  if (!m) throw new Error(`invalid ${what}: ${text3}`);
-  return m.slice(1).map(Number);
+// src/util.ts
+function fold(text2) {
+  return text2.normalize("NFD").replace(new RegExp("\\p{M}", "gu"), "").toLowerCase();
 }
-function offsetMs(ts, timeZone) {
-  const fields = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  }).formatToParts(new Date(ts));
-  const get = (type) => Number(fields.find((f) => f.type === type)?.value);
-  const local = Date.UTC(
-    get("year"),
-    get("month") - 1,
-    get("day"),
-    get("hour"),
-    get("minute"),
-    get("second")
-  );
-  return local - ts;
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-function zonedToUtc(date, time, timeZone) {
-  const [y = 0, mo = 1, d = 1] = parts(DATE_RE, date, "date");
-  const [h = 0, mi = 0] = parts(TIME_RE, time, "time");
-  const wall = Date.UTC(y, mo - 1, d, h, mi);
-  const first = wall - offsetMs(wall, timeZone);
-  return new Date(wall - offsetMs(first, timeZone));
-}
-function addDays(date, days) {
-  const [y = 0, mo = 1, d = 1] = parts(DATE_RE, date, "date");
-  return new Date(Date.UTC(y, mo - 1, d + days)).toISOString().slice(0, 10);
-}
-function localDate(at, timeZone) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(at);
-}
-function localTime(at, timeZone) {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    hourCycle: "h23",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(at);
-}
-
-// src/model.ts
-function kickoff(f, timezone) {
-  return f.time ? zonedToUtc(f.date, f.time, timezone) : null;
-}
-
-// src/team-names.ts
-var SEPARATORS = /([\s\-–]+)/;
-var VOWEL = /[AEIOUÁÉÍÓÖŐÚÜŰ]/;
-function teamName(name) {
-  if (name !== name.toUpperCase() || new RegExp("^\\p{Lu}{1,4}$", "u").test(name)) return name;
-  return name.split(SEPARATORS).map(
-    (part) => SEPARATORS.test(part) || part.length <= 3 || !VOWEL.test(part) ? part : part.charAt(0) + part.slice(1).toLowerCase()
-  ).join("");
-}
-function ownTeam(fixtures) {
-  const counts = /* @__PURE__ */ new Map();
-  for (const f of fixtures) {
-    for (const name of /* @__PURE__ */ new Set([f.home, f.away])) counts.set(name, (counts.get(name) ?? 0) + 1);
-  }
-  let best = null;
-  let most = 0;
-  for (const [name, count] of counts) {
-    if (count > most) {
-      best = name;
-      most = count;
-    }
-  }
-  return best;
-}
-
-// src/formats/ics.ts
-var MATCH_LENGTH_MS = 2 * 3600 * 1e3;
-var stale = (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`;
-function escapeText(text3) {
-  return text3.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
-}
-function param(text3) {
-  return `"${text3.replace(/"/g, "'")}"`;
-}
-function foldLine(line) {
-  const out = [];
-  let current = "";
-  let limit = 75;
-  for (const ch of line) {
-    if (Buffer.byteLength(current + ch, "utf8") > limit) {
-      out.push(current);
-      current = ch;
-      limit = 74;
-    } else {
-      current += ch;
-    }
-  }
-  out.push(current);
-  return out.join("\r\n ");
-}
-function utcStamp(at) {
-  return at.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-}
-function dateValue(date) {
-  return date.replace(/-/g, "");
-}
-function locationLines(venue, place) {
-  if (!venue) return [];
-  if (!place) return [`LOCATION:${escapeText(venue)}`];
-  const address = [place.street, place.town].filter(Boolean).join(", ");
-  const full = `${venue}, ${address}`;
-  return [
-    `LOCATION:${escapeText(full)}`,
-    `GEO:${place.lat};${place.lon}`,
-    `X-APPLE-STRUCTURED-LOCATION;VALUE=URI;X-ADDRESS=${param(address)};X-APPLE-RADIUS=150;X-TITLE=${param(full)}:geo:${place.lat},${place.lon}`
-  ];
-}
-function summary(f) {
-  const score = f.result ? /^(\d+)\s*-\s*(\d+)$/.exec(f.result.trim()) : null;
-  const between = score ? ` ${score[1]}:${score[2]} ` : f.result ? ` ${f.result.trim()} ` : " \u2013 ";
-  const match = `${teamName(f.home)}${between}${teamName(f.away)}`;
-  return f.competition ? `${match} | ${f.competition}` : match;
-}
-function event(f, meta, now, extras) {
-  const note = extras.annotations?.get(f.date);
-  const start = kickoff(f, meta.timezone);
-  const when = start ? [`DTSTART:${utcStamp(start)}`, `DTEND:${utcStamp(new Date(start.getTime() + MATCH_LENGTH_MS))}`] : (
-    // The day is set, the time is not yet: an all-day event until it is.
-    [`DTSTART;VALUE=DATE:${dateValue(f.date)}`, `DTEND;VALUE=DATE:${dateValue(addDays(f.date, 1))}`]
-  );
-  const info = [...note?.lines ?? [], note?.url ?? ""].filter(Boolean);
-  return [
-    "BEGIN:VEVENT",
-    `UID:${f.source}-${f.id}@fixtical`,
-    `DTSTAMP:${utcStamp(now)}`,
-    ...when,
-    `SUMMARY:${escapeText(summary(f))}`,
-    ...locationLines(f.venue, extras.places?.get(f.venue)),
-    ...info.length ? [`DESCRIPTION:${escapeText(info.join("\n"))}`] : [],
-    ...f.url ? [`URL:${f.url}`] : [],
-    "END:VEVENT"
-  ];
-}
-function staleEvent(meta, since, now) {
-  const today = localDate(now, meta.timezone);
-  return [
-    "BEGIN:VEVENT",
-    "UID:stale@fixtical",
-    `DTSTAMP:${utcStamp(now)}`,
-    `DTSTART;VALUE=DATE:${dateValue(today)}`,
-    `DTEND;VALUE=DATE:${dateValue(addDays(today, 1))}`,
-    `SUMMARY:${escapeText(stale(localDate(new Date(since), meta.timezone)))}`,
-    "END:VEVENT"
-  ];
-}
-function buildIcs(meta, fixtures, now, extras = {}) {
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//fixtical//fixtical//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    `X-WR-CALNAME:${escapeText(meta.name)}`,
-    `X-WR-TIMEZONE:${meta.timezone}`,
-    "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
-    "X-PUBLISHED-TTL:PT1H",
-    ...meta.color ? [`X-APPLE-CALENDAR-COLOR:${meta.color}`] : [],
-    ...meta.staleSince ? staleEvent(meta, meta.staleSince, now) : [],
-    ...fixtures.flatMap((f) => event(f, meta, now, extras)),
-    "END:VCALENDAR"
-  ];
-  return `${lines.map(foldLine).join("\r\n")}\r
-`;
-}
-
-// src/formats/json.ts
-var JSON_SCHEMA = 1;
-function buildJson(slug, name, timezone, team, fixtures, now, places = /* @__PURE__ */ new Map()) {
-  return {
-    schema: JSON_SCHEMA,
-    slug,
-    name,
-    timezone,
-    generated_at: now.toISOString(),
-    fixtures: fixtures.map((f) => {
-      const place = places.get(f.venue);
-      return {
-        source: f.source,
-        id: f.id,
-        date: f.date,
-        time: f.time,
-        start: kickoff(f, timezone)?.toISOString() ?? null,
-        home: teamName(f.home),
-        away: teamName(f.away),
-        at_home: team === f.home ? true : team === f.away ? false : null,
-        venue: f.venue,
-        location: place ? { address: [place.street, place.town].filter(Boolean).join(", "), lat: place.lat, lon: place.lon } : null,
-        competition: f.competition,
-        result: f.result,
-        url: f.url
-      };
-    })
-  };
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // src/http.ts
@@ -7612,7 +7404,7 @@ var Client = class {
   last = /* @__PURE__ */ new Map();
   constructor(options = {}) {
     this.fetchFn = options.fetch ?? defaultFetch;
-    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.sleep = options.sleep ?? sleep;
     this.now = options.now ?? Date.now;
     this.minGapMs = options.minGapMs ?? 2e3;
     this.timeoutMs = options.timeoutMs ?? 2e4;
@@ -7656,9 +7448,6 @@ var NOMINATIM_GAP_MS = 1100;
 var RETRY_AFTER_MS = 30 * 86400 * 1e3;
 var MAX_LOOKUPS = 20;
 var GENERIC_WORDS = /* @__PURE__ */ new Set(["uj", "labdarugo", "fc"]);
-function fold(text3) {
-  return text3.normalize("NFD").replace(new RegExp("\\p{M}", "gu"), "").toLowerCase();
-}
 function queries(venue, home) {
   const words = venue.split(/\s+/).filter((w) => w && !GENERIC_WORDS.has(fold(w)));
   const club = home.split(/\s+/).filter((w) => w && !GENERIC_WORDS.has(fold(w))).map(fold);
@@ -7682,7 +7471,7 @@ var Geocoder = class {
   constructor(options = {}) {
     this.googleKey = options.googleKey || null;
     this.fetchFn = options.fetch ?? defaultFetch;
-    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.sleep = options.sleep ?? sleep;
   }
   stands(entry, now) {
     if (!entry) return false;
@@ -7784,454 +7573,276 @@ var Geocoder = class {
     };
   }
 };
+function placeAddress(place) {
+  return [place.street, place.town].filter(Boolean).join(", ");
+}
 function foundPlaces(cache) {
   const map = /* @__PURE__ */ new Map();
   for (const [venue, entry] of Object.entries(cache)) if (entry?.place) map.set(venue, entry.place);
   return map;
 }
 
-// node_modules/boolbase/dist/index.js
-function trueFunc() {
-  return true;
+// src/time.ts
+var TIMEZONE = "Europe/Budapest";
+var DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+var TIME_RE = /^(\d{2}):(\d{2})$/;
+function parts(re, text2, what) {
+  const m = re.exec(text2);
+  if (!m) throw new Error(`invalid ${what}: ${text2}`);
+  return m.slice(1).map(Number);
 }
-function falseFunc() {
-  return false;
-}
-
-// node_modules/css-what/dist/types.js
-var SelectorType;
-(function(SelectorType2) {
-  SelectorType2["Attribute"] = "attribute";
-  SelectorType2["Pseudo"] = "pseudo";
-  SelectorType2["PseudoElement"] = "pseudo-element";
-  SelectorType2["Tag"] = "tag";
-  SelectorType2["Universal"] = "universal";
-  SelectorType2["Adjacent"] = "adjacent";
-  SelectorType2["Child"] = "child";
-  SelectorType2["Descendant"] = "descendant";
-  SelectorType2["Parent"] = "parent";
-  SelectorType2["Sibling"] = "sibling";
-  SelectorType2["ColumnCombinator"] = "column-combinator";
-})(SelectorType || (SelectorType = {}));
-var AttributeAction;
-(function(AttributeAction2) {
-  AttributeAction2["Any"] = "any";
-  AttributeAction2["Element"] = "element";
-  AttributeAction2["End"] = "end";
-  AttributeAction2["Equals"] = "equals";
-  AttributeAction2["Exists"] = "exists";
-  AttributeAction2["Hyphen"] = "hyphen";
-  AttributeAction2["Not"] = "not";
-  AttributeAction2["Start"] = "start";
-})(AttributeAction || (AttributeAction = {}));
-
-// node_modules/css-what/dist/parse.js
-var reName = /^[^#\\]?(?:\\(?:[\da-f]{1,6}\s?|.)|[\w\u00B0-\uFFFF-])+/;
-var reEscape = /\\([\da-f]{1,6}\s?|(\s)|.)/gi;
-var CharCode;
-(function(CharCode2) {
-  CharCode2[CharCode2["LeftParenthesis"] = 40] = "LeftParenthesis";
-  CharCode2[CharCode2["RightParenthesis"] = 41] = "RightParenthesis";
-  CharCode2[CharCode2["LeftSquareBracket"] = 91] = "LeftSquareBracket";
-  CharCode2[CharCode2["RightSquareBracket"] = 93] = "RightSquareBracket";
-  CharCode2[CharCode2["Comma"] = 44] = "Comma";
-  CharCode2[CharCode2["Period"] = 46] = "Period";
-  CharCode2[CharCode2["Colon"] = 58] = "Colon";
-  CharCode2[CharCode2["SingleQuote"] = 39] = "SingleQuote";
-  CharCode2[CharCode2["DoubleQuote"] = 34] = "DoubleQuote";
-  CharCode2[CharCode2["Plus"] = 43] = "Plus";
-  CharCode2[CharCode2["Tilde"] = 126] = "Tilde";
-  CharCode2[CharCode2["QuestionMark"] = 63] = "QuestionMark";
-  CharCode2[CharCode2["ExclamationMark"] = 33] = "ExclamationMark";
-  CharCode2[CharCode2["Slash"] = 47] = "Slash";
-  CharCode2[CharCode2["Equal"] = 61] = "Equal";
-  CharCode2[CharCode2["Dollar"] = 36] = "Dollar";
-  CharCode2[CharCode2["Pipe"] = 124] = "Pipe";
-  CharCode2[CharCode2["Circumflex"] = 94] = "Circumflex";
-  CharCode2[CharCode2["Asterisk"] = 42] = "Asterisk";
-  CharCode2[CharCode2["GreaterThan"] = 62] = "GreaterThan";
-  CharCode2[CharCode2["LessThan"] = 60] = "LessThan";
-  CharCode2[CharCode2["Hash"] = 35] = "Hash";
-  CharCode2[CharCode2["LowerI"] = 105] = "LowerI";
-  CharCode2[CharCode2["LowerS"] = 115] = "LowerS";
-  CharCode2[CharCode2["BackSlash"] = 92] = "BackSlash";
-  CharCode2[CharCode2["Space"] = 32] = "Space";
-  CharCode2[CharCode2["Tab"] = 9] = "Tab";
-  CharCode2[CharCode2["NewLine"] = 10] = "NewLine";
-  CharCode2[CharCode2["FormFeed"] = 12] = "FormFeed";
-  CharCode2[CharCode2["CarriageReturn"] = 13] = "CarriageReturn";
-})(CharCode || (CharCode = {}));
-var actionTypes = /* @__PURE__ */ new Map([
-  [CharCode.Tilde, AttributeAction.Element],
-  [CharCode.Circumflex, AttributeAction.Start],
-  [CharCode.Dollar, AttributeAction.End],
-  [CharCode.Asterisk, AttributeAction.Any],
-  [CharCode.ExclamationMark, AttributeAction.Not],
-  [CharCode.Pipe, AttributeAction.Hyphen]
-]);
-var unpackPseudos = /* @__PURE__ */ new Set([
-  "has",
-  "not",
-  "matches",
-  "is",
-  "where",
-  "host",
-  "host-context"
-]);
-var pseudosToPseudoElements = /* @__PURE__ */ new Set([
-  "before",
-  "after",
-  "first-line",
-  "first-letter"
-]);
-function isTraversal(selector) {
-  switch (selector.type) {
-    case SelectorType.Adjacent:
-    case SelectorType.Child:
-    case SelectorType.Descendant:
-    case SelectorType.Parent:
-    case SelectorType.Sibling:
-    case SelectorType.ColumnCombinator: {
-      return true;
-    }
-    case SelectorType.Attribute:
-    case SelectorType.Pseudo:
-    case SelectorType.PseudoElement:
-    case SelectorType.Tag:
-    case SelectorType.Universal: {
-      return false;
-    }
-  }
-}
-var stripQuotesFromPseudos = /* @__PURE__ */ new Set(["contains", "icontains"]);
-function funescape(_, escaped, escapedWhitespace) {
-  const high = Number.parseInt(escaped, 16) - 65536;
-  return Number.isNaN(high) || escapedWhitespace ? escaped : high < 0 ? (
-    // BMP codepoint
-    String.fromCharCode(high + 65536)
-  ) : (
-    // Supplemental Plane codepoint (surrogate pair)
-    String.fromCharCode(high >> 10 | 55296, high & 1023 | 56320)
+function offsetMs(ts, timeZone) {
+  const fields = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).formatToParts(new Date(ts));
+  const get = (type) => Number(fields.find((f) => f.type === type)?.value);
+  const local = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour"),
+    get("minute"),
+    get("second")
   );
+  return local - ts;
 }
-function unescapeCSS(cssString) {
-  return cssString.replace(reEscape, funescape);
+function zonedToUtc(date, time, timeZone) {
+  const [y = 0, mo = 1, d = 1] = parts(DATE_RE, date, "date");
+  const [h = 0, mi = 0] = parts(TIME_RE, time, "time");
+  const wall = Date.UTC(y, mo - 1, d, h, mi);
+  const first = wall - offsetMs(wall, timeZone);
+  return new Date(wall - offsetMs(first, timeZone));
 }
-function isQuote(c) {
-  return c === CharCode.SingleQuote || c === CharCode.DoubleQuote;
+function addDays(date, days) {
+  const [y = 0, mo = 1, d = 1] = parts(DATE_RE, date, "date");
+  return new Date(Date.UTC(y, mo - 1, d + days)).toISOString().slice(0, 10);
 }
-function isWhitespace(c) {
-  return c === CharCode.Space || c === CharCode.Tab || c === CharCode.NewLine || c === CharCode.FormFeed || c === CharCode.CarriageReturn;
+function localDate(at, timeZone) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(at);
 }
-function parse(selector) {
-  const subselects2 = [];
-  const endIndex = parseSelector(subselects2, `${selector}`, 0);
-  if (endIndex < selector.length) {
-    throw new Error(`Unmatched selector: ${selector.slice(endIndex)}`);
-  }
-  return subselects2;
+function localTime(at, timeZone) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hourCycle: "h23",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(at);
 }
-function parseSelector(subselects2, selector, selectorIndex) {
-  let tokens = [];
-  function getName2(offset) {
-    const match = selector.slice(selectorIndex + offset).match(reName);
-    if (!match) {
-      throw new Error(`Expected name, found ${selector.slice(selectorIndex)}`);
-    }
-    const [name] = match;
-    selectorIndex += offset + name.length;
-    return unescapeCSS(name);
-  }
-  function stripWhitespace(offset) {
-    selectorIndex += offset;
-    while (selectorIndex < selector.length && isWhitespace(selector.charCodeAt(selectorIndex))) {
-      selectorIndex++;
-    }
-  }
-  function readValueWithParenthesis() {
-    selectorIndex += 1;
-    const start = selectorIndex;
-    for (let counter = 1; selectorIndex < selector.length; selectorIndex++) {
-      switch (selector.charCodeAt(selectorIndex)) {
-        case CharCode.BackSlash: {
-          selectorIndex += 1;
-          break;
-        }
-        case CharCode.LeftParenthesis: {
-          counter += 1;
-          break;
-        }
-        case CharCode.RightParenthesis: {
-          counter -= 1;
-          if (counter === 0) {
-            return unescapeCSS(selector.slice(start, selectorIndex++));
-          }
-          break;
-        }
-      }
-    }
-    throw new Error("Parenthesis not matched");
-  }
-  function ensureNotTraversal() {
-    if (tokens.length > 0 && isTraversal(tokens[tokens.length - 1])) {
-      throw new Error("Did not expect successive traversals.");
-    }
-  }
-  function addTraversal(type) {
-    if (tokens.length > 0 && tokens[tokens.length - 1].type === SelectorType.Descendant) {
-      tokens[tokens.length - 1].type = type;
-      return;
-    }
-    ensureNotTraversal();
-    tokens.push({ type });
-  }
-  function addSpecialAttribute(name, action) {
-    tokens.push({
-      type: SelectorType.Attribute,
-      name,
-      action,
-      value: getName2(1),
-      namespace: null,
-      ignoreCase: "quirks"
-    });
-  }
-  function finalizeSubselector() {
-    if (tokens.length > 0 && tokens[tokens.length - 1].type === SelectorType.Descendant) {
-      tokens.pop();
-    }
-    if (tokens.length === 0) {
-      throw new Error("Empty sub-selector");
-    }
-    subselects2.push(tokens);
-  }
-  stripWhitespace(0);
-  if (selector.length === selectorIndex) {
-    return selectorIndex;
-  }
-  loop: while (selectorIndex < selector.length) {
-    const firstChar = selector.charCodeAt(selectorIndex);
-    switch (firstChar) {
-      // Whitespace
-      case CharCode.Space:
-      case CharCode.Tab:
-      case CharCode.NewLine:
-      case CharCode.FormFeed:
-      case CharCode.CarriageReturn: {
-        if (tokens.length === 0 || tokens[0].type !== SelectorType.Descendant) {
-          ensureNotTraversal();
-          tokens.push({ type: SelectorType.Descendant });
-        }
-        stripWhitespace(1);
-        break;
-      }
-      // Traversals
-      case CharCode.GreaterThan: {
-        addTraversal(SelectorType.Child);
-        stripWhitespace(1);
-        break;
-      }
-      case CharCode.LessThan: {
-        addTraversal(SelectorType.Parent);
-        stripWhitespace(1);
-        break;
-      }
-      case CharCode.Tilde: {
-        addTraversal(SelectorType.Sibling);
-        stripWhitespace(1);
-        break;
-      }
-      case CharCode.Plus: {
-        addTraversal(SelectorType.Adjacent);
-        stripWhitespace(1);
-        break;
-      }
-      // Special attribute selectors: .class, #id
-      case CharCode.Period: {
-        addSpecialAttribute("class", AttributeAction.Element);
-        break;
-      }
-      case CharCode.Hash: {
-        addSpecialAttribute("id", AttributeAction.Equals);
-        break;
-      }
-      case CharCode.LeftSquareBracket: {
-        stripWhitespace(1);
-        let name;
-        let namespace = null;
-        if (selector.charCodeAt(selectorIndex) === CharCode.Pipe) {
-          name = getName2(1);
-        } else if (selector.startsWith("*|", selectorIndex)) {
-          namespace = "*";
-          name = getName2(2);
-        } else {
-          name = getName2(0);
-          if (selector.charCodeAt(selectorIndex) === CharCode.Pipe && selector.charCodeAt(selectorIndex + 1) !== CharCode.Equal) {
-            namespace = name;
-            name = getName2(1);
-          }
-        }
-        stripWhitespace(0);
-        let action = AttributeAction.Exists;
-        const possibleAction = actionTypes.get(selector.charCodeAt(selectorIndex));
-        if (possibleAction) {
-          action = possibleAction;
-          if (selector.charCodeAt(selectorIndex + 1) !== CharCode.Equal) {
-            throw new Error("Expected `=`");
-          }
-          stripWhitespace(2);
-        } else if (selector.charCodeAt(selectorIndex) === CharCode.Equal) {
-          action = AttributeAction.Equals;
-          stripWhitespace(1);
-        }
-        let value = "";
-        let ignoreCase = null;
-        if (action !== "exists") {
-          if (isQuote(selector.charCodeAt(selectorIndex))) {
-            const quote = selector.charCodeAt(selectorIndex);
-            selectorIndex += 1;
-            const sectionStart = selectorIndex;
-            while (selectorIndex < selector.length && selector.charCodeAt(selectorIndex) !== quote) {
-              selectorIndex += // Skip next character if it is escaped
-              selector.charCodeAt(selectorIndex) === CharCode.BackSlash ? 2 : 1;
-            }
-            if (selector.charCodeAt(selectorIndex) !== quote) {
-              throw new Error("Attribute value didn't end");
-            }
-            value = unescapeCSS(selector.slice(sectionStart, selectorIndex));
-            selectorIndex += 1;
-          } else {
-            const valueStart = selectorIndex;
-            while (selectorIndex < selector.length && !isWhitespace(selector.charCodeAt(selectorIndex)) && selector.charCodeAt(selectorIndex) !== CharCode.RightSquareBracket) {
-              selectorIndex += // Skip next character if it is escaped
-              selector.charCodeAt(selectorIndex) === CharCode.BackSlash ? 2 : 1;
-            }
-            value = unescapeCSS(selector.slice(valueStart, selectorIndex));
-          }
-          stripWhitespace(0);
-          switch (selector.charCodeAt(selectorIndex) | 32) {
-            // If the forceIgnore flag is set (either `i` or `s`), use that value
-            case CharCode.LowerI: {
-              ignoreCase = true;
-              stripWhitespace(1);
-              break;
-            }
-            case CharCode.LowerS: {
-              ignoreCase = false;
-              stripWhitespace(1);
-              break;
-            }
-          }
-        }
-        if (selector.charCodeAt(selectorIndex) !== CharCode.RightSquareBracket) {
-          throw new Error("Attribute selector didn't terminate");
-        }
-        selectorIndex += 1;
-        const attributeSelector = {
-          type: SelectorType.Attribute,
-          name,
-          action,
-          value,
-          namespace,
-          ignoreCase
-        };
-        tokens.push(attributeSelector);
-        break;
-      }
-      case CharCode.Colon: {
-        if (selector.charCodeAt(selectorIndex + 1) === CharCode.Colon) {
-          tokens.push({
-            type: SelectorType.PseudoElement,
-            name: getName2(2).toLowerCase(),
-            data: selector.charCodeAt(selectorIndex) === CharCode.LeftParenthesis ? readValueWithParenthesis() : null
-          });
-          break;
-        }
-        const name = getName2(1).toLowerCase();
-        if (pseudosToPseudoElements.has(name)) {
-          tokens.push({
-            type: SelectorType.PseudoElement,
-            name,
-            data: null
-          });
-          break;
-        }
-        let data = null;
-        if (selector.charCodeAt(selectorIndex) === CharCode.LeftParenthesis) {
-          if (unpackPseudos.has(name)) {
-            if (isQuote(selector.charCodeAt(selectorIndex + 1))) {
-              throw new Error(`Pseudo-selector ${name} cannot be quoted`);
-            }
-            data = [];
-            selectorIndex = parseSelector(data, selector, selectorIndex + 1);
-            if (selector.charCodeAt(selectorIndex) !== CharCode.RightParenthesis) {
-              throw new Error(`Missing closing parenthesis in :${name} (${selector})`);
-            }
-            selectorIndex += 1;
-          } else {
-            data = readValueWithParenthesis();
-            if (stripQuotesFromPseudos.has(name)) {
-              const quot = data.charCodeAt(0);
-              if (quot === data.charCodeAt(data.length - 1) && isQuote(quot)) {
-                data = data.slice(1, -1);
-              }
-            }
-            data = unescapeCSS(data);
-          }
-        }
-        tokens.push({ type: SelectorType.Pseudo, name, data });
-        break;
-      }
-      case CharCode.Comma: {
-        finalizeSubselector();
-        tokens = [];
-        stripWhitespace(1);
-        break;
-      }
-      default: {
-        if (selector.startsWith("/*", selectorIndex)) {
-          const endIndex = selector.indexOf("*/", selectorIndex + 2);
-          if (endIndex === -1) {
-            throw new Error("Comment was not terminated");
-          }
-          selectorIndex = endIndex + 2;
-          if (tokens.length === 0) {
-            stripWhitespace(0);
-          }
-          break;
-        }
-        let namespace = null;
-        let name;
-        if (firstChar === CharCode.Asterisk) {
-          selectorIndex += 1;
-          name = "*";
-        } else if (firstChar === CharCode.Pipe) {
-          name = "";
-          if (selector.charCodeAt(selectorIndex + 1) === CharCode.Pipe) {
-            addTraversal(SelectorType.ColumnCombinator);
-            stripWhitespace(2);
-            break;
-          }
-        } else if (reName.test(selector.slice(selectorIndex))) {
-          name = getName2(0);
-        } else {
-          break loop;
-        }
-        if (selector.charCodeAt(selectorIndex) === CharCode.Pipe && selector.charCodeAt(selectorIndex + 1) !== CharCode.Pipe) {
-          namespace = name;
-          if (selector.charCodeAt(selectorIndex + 1) === CharCode.Asterisk) {
-            name = "*";
-            selectorIndex += 2;
-          } else {
-            name = getName2(1);
-          }
-        }
-        tokens.push(name === "*" ? { type: SelectorType.Universal, namespace } : { type: SelectorType.Tag, name, namespace });
-      }
-    }
-  }
-  finalizeSubselector();
-  return selectorIndex;
+
+// src/model.ts
+function kickoff(f, timezone) {
+  return f.time ? zonedToUtc(f.date, f.time, timezone) : null;
 }
+function byKickoff(a, b) {
+  return a.date.localeCompare(b.date) || (a.time ?? "").localeCompare(b.time ?? "") || a.id.localeCompare(b.id);
+}
+
+// src/team-names.ts
+var SEPARATORS = /([\s\-–]+)/;
+var VOWEL = /[AEIOUÁÉÍÓÖŐÚÜŰ]/;
+function teamName(name) {
+  if (name !== name.toUpperCase() || new RegExp("^\\p{Lu}{1,4}$", "u").test(name)) return name;
+  return name.split(SEPARATORS).map(
+    (part) => SEPARATORS.test(part) || part.length <= 3 || !VOWEL.test(part) ? part : part.charAt(0) + part.slice(1).toLowerCase()
+  ).join("");
+}
+function ownTeam(fixtures) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const f of fixtures) {
+    for (const name of /* @__PURE__ */ new Set([f.home, f.away])) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  let best = null;
+  let most = 0;
+  for (const [name, count] of counts) {
+    if (count > most) {
+      best = name;
+      most = count;
+    }
+  }
+  return best;
+}
+
+// src/formats/ics.ts
+var MATCH_LENGTH_MS = 2 * 3600 * 1e3;
+var stale = (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`;
+function escapeText(text2) {
+  return text2.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+function param(text2) {
+  return `"${text2.replace(/"/g, "'")}"`;
+}
+function foldLine(line) {
+  const out = [];
+  let current = "";
+  let limit = 75;
+  for (const ch of line) {
+    if (Buffer.byteLength(current + ch, "utf8") > limit) {
+      out.push(current);
+      current = ch;
+      limit = 74;
+    } else {
+      current += ch;
+    }
+  }
+  out.push(current);
+  return out.join("\r\n ");
+}
+function utcStamp(at) {
+  return at.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+function dateValue(date) {
+  return date.replace(/-/g, "");
+}
+function locationLines(venue, place) {
+  if (!venue) return [];
+  if (!place) return [`LOCATION:${escapeText(venue)}`];
+  const address = placeAddress(place);
+  const full = `${venue}, ${address}`;
+  return [
+    `LOCATION:${escapeText(full)}`,
+    `GEO:${place.lat};${place.lon}`,
+    `X-APPLE-STRUCTURED-LOCATION;VALUE=URI;X-ADDRESS=${param(address)};X-APPLE-RADIUS=150;X-TITLE=${param(full)}:geo:${place.lat},${place.lon}`
+  ];
+}
+function summary(f) {
+  const score = f.result ? /^(\d+)\s*-\s*(\d+)$/.exec(f.result.trim()) : null;
+  const between = score ? ` ${score[1]}:${score[2]} ` : f.result ? ` ${f.result.trim()} ` : " \u2013 ";
+  const match = `${teamName(f.home)}${between}${teamName(f.away)}`;
+  return f.competition ? `${match} | ${f.competition}` : match;
+}
+function event(f, meta, now, extras) {
+  const note = extras.annotations?.get(f.date);
+  const start = kickoff(f, meta.timezone);
+  const when = start ? [`DTSTART:${utcStamp(start)}`, `DTEND:${utcStamp(new Date(start.getTime() + MATCH_LENGTH_MS))}`] : (
+    // The day is set, the time is not yet: an all-day event until it is.
+    [`DTSTART;VALUE=DATE:${dateValue(f.date)}`, `DTEND;VALUE=DATE:${dateValue(addDays(f.date, 1))}`]
+  );
+  const info = [...note?.lines ?? [], note?.url ?? ""].filter(Boolean);
+  return [
+    "BEGIN:VEVENT",
+    `UID:${f.source}-${f.id}@fixtical`,
+    `DTSTAMP:${utcStamp(now)}`,
+    ...when,
+    `SUMMARY:${escapeText(summary(f))}`,
+    ...locationLines(f.venue, extras.places?.get(f.venue)),
+    ...info.length ? [`DESCRIPTION:${escapeText(info.join("\n"))}`] : [],
+    ...f.url ? [`URL:${f.url}`] : [],
+    "END:VEVENT"
+  ];
+}
+function staleEvent(meta, since, now) {
+  const today = localDate(now, meta.timezone);
+  return [
+    "BEGIN:VEVENT",
+    "UID:stale@fixtical",
+    `DTSTAMP:${utcStamp(now)}`,
+    `DTSTART;VALUE=DATE:${dateValue(today)}`,
+    `DTEND;VALUE=DATE:${dateValue(addDays(today, 1))}`,
+    `SUMMARY:${escapeText(stale(localDate(new Date(since), meta.timezone)))}`,
+    "END:VEVENT"
+  ];
+}
+function buildIcs(meta, fixtures, now, extras = {}) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//fixtical//fixtical//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    `X-WR-CALNAME:${escapeText(meta.name)}`,
+    `X-WR-TIMEZONE:${meta.timezone}`,
+    "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
+    "X-PUBLISHED-TTL:PT1H",
+    ...meta.color ? [`X-APPLE-CALENDAR-COLOR:${meta.color}`] : [],
+    ...meta.staleSince ? staleEvent(meta, meta.staleSince, now) : [],
+    ...fixtures.flatMap((f) => event(f, meta, now, extras)),
+    "END:VCALENDAR"
+  ];
+  return `${lines.map(foldLine).join("\r\n")}\r
+`;
+}
+
+// src/formats/json.ts
+var JSON_SCHEMA = 1;
+function buildJson(slug, name, timezone, team, fixtures, now, places = /* @__PURE__ */ new Map()) {
+  return {
+    schema: JSON_SCHEMA,
+    slug,
+    name,
+    timezone,
+    generated_at: now.toISOString(),
+    fixtures: fixtures.map((f) => {
+      const place = places.get(f.venue);
+      return {
+        source: f.source,
+        id: f.id,
+        date: f.date,
+        time: f.time,
+        start: kickoff(f, timezone)?.toISOString() ?? null,
+        home: teamName(f.home),
+        away: teamName(f.away),
+        at_home: team === f.home ? true : team === f.away ? false : null,
+        venue: f.venue,
+        location: place ? { address: placeAddress(place), lat: place.lat, lon: place.lon } : null,
+        competition: f.competition,
+        result: f.result,
+        url: f.url
+      };
+    })
+  };
+}
+
+// node_modules/domutils/dist/index.js
+var dist_exports2 = {};
+__export(dist_exports2, {
+  DocumentPosition: () => DocumentPosition,
+  append: () => append,
+  appendChild: () => appendChild,
+  compareDocumentPosition: () => compareDocumentPosition,
+  existsOne: () => existsOne,
+  filter: () => filter,
+  find: () => find,
+  findAll: () => findAll,
+  findOne: () => findOne,
+  getAttributeValue: () => getAttributeValue,
+  getChildren: () => getChildren,
+  getElementById: () => getElementById,
+  getElements: () => getElements,
+  getElementsByClassName: () => getElementsByClassName,
+  getElementsByTagName: () => getElementsByTagName,
+  getElementsByTagType: () => getElementsByTagType,
+  getFeed: () => getFeed,
+  getInnerHTML: () => getInnerHTML,
+  getName: () => getName,
+  getOuterHTML: () => getOuterHTML,
+  getParent: () => getParent,
+  getSiblings: () => getSiblings,
+  getText: () => getText,
+  hasAttrib: () => hasAttrib,
+  innerText: () => innerText,
+  nextElementSibling: () => nextElementSibling,
+  prepend: () => prepend,
+  prependChild: () => prependChild,
+  prevElementSibling: () => prevElementSibling,
+  removeElement: () => removeElement,
+  removeSubsets: () => removeSubsets,
+  replaceElement: () => replaceElement,
+  testElement: () => testElement,
+  textContent: () => textContent,
+  uniqueSort: () => uniqueSort
+});
 
 // node_modules/domelementtype/dist/index.js
 var ElementType;
@@ -8640,11 +8251,11 @@ var DomHandler = class {
     this.lastNode = null;
   }
   oncdatastart() {
-    const text3 = new Text2("");
-    const node = new CDATA2([text3]);
+    const text2 = new Text2("");
+    const node = new CDATA2([text2]);
     this.addNode(node);
-    text3.parent = node;
-    this.lastNode = text3;
+    text2.parent = node;
+    this.lastNode = text2;
   }
   oncdataend() {
     this.lastNode = null;
@@ -8678,46 +8289,6 @@ var DomHandler = class {
     this.lastNode = null;
   }
 };
-
-// node_modules/domutils/dist/index.js
-var dist_exports2 = {};
-__export(dist_exports2, {
-  DocumentPosition: () => DocumentPosition,
-  append: () => append,
-  appendChild: () => appendChild,
-  compareDocumentPosition: () => compareDocumentPosition,
-  existsOne: () => existsOne,
-  filter: () => filter,
-  find: () => find,
-  findAll: () => findAll,
-  findOne: () => findOne,
-  getAttributeValue: () => getAttributeValue,
-  getChildren: () => getChildren,
-  getElementById: () => getElementById,
-  getElements: () => getElements,
-  getElementsByClassName: () => getElementsByClassName,
-  getElementsByTagName: () => getElementsByTagName,
-  getElementsByTagType: () => getElementsByTagType,
-  getFeed: () => getFeed,
-  getInnerHTML: () => getInnerHTML,
-  getName: () => getName,
-  getOuterHTML: () => getOuterHTML,
-  getParent: () => getParent,
-  getSiblings: () => getSiblings,
-  getText: () => getText,
-  hasAttrib: () => hasAttrib,
-  innerText: () => innerText,
-  nextElementSibling: () => nextElementSibling,
-  prepend: () => prepend,
-  prependChild: () => prependChild,
-  prevElementSibling: () => prevElementSibling,
-  removeElement: () => removeElement,
-  removeSubsets: () => removeSubsets,
-  replaceElement: () => replaceElement,
-  testElement: () => testElement,
-  textContent: () => textContent,
-  uniqueSort: () => uniqueSort
-});
 
 // node_modules/domutils/dist/querying.js
 function filter(test, node, recurse = true, limit = Number.POSITIVE_INFINITY) {
@@ -10075,6 +9646,594 @@ function prevElementSibling(element) {
   return prev;
 }
 
+// src/config.ts
+var import_yaml = __toESM(require_dist(), 1);
+import { readFile } from "node:fs/promises";
+var CATEGORIES = ["men", "women", "futsal", "women-futsal", "youth"];
+var ConfigError = class extends Error {
+  problems;
+  constructor(problems) {
+    super(`invalid configuration:
+  ${problems.join("\n  ")}`);
+    this.name = "ConfigError";
+    this.problems = problems;
+  }
+};
+var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+var COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+var CALENDAR_KEYS = /* @__PURE__ */ new Set([
+  "source",
+  "slug",
+  "color",
+  "team_url",
+  "team",
+  "club",
+  "federation",
+  "category",
+  "competition",
+  "include"
+]);
+function defaultSlug(teamUrl, club, team, category) {
+  if (teamUrl) return `team-${/(\d+)\.html$/.exec(teamUrl)?.[1] ?? "x"}`;
+  if (club === null && team)
+    return team.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "team";
+  return category === "men" ? `club-${club}` : `club-${club}-${category}`;
+}
+function calendar(raw, where, problems) {
+  if (!isRecord(raw)) {
+    problems.push(`${where}: expected a mapping`);
+    return null;
+  }
+  const before = problems.length;
+  for (const key of Object.keys(raw)) {
+    if (!CALENDAR_KEYS.has(key)) problems.push(`${where}: unknown key "${key}"`);
+  }
+  const str = (key) => {
+    const value = raw[key];
+    if (value === void 0 || value === null) return null;
+    if (typeof value !== "string" || !value.trim()) {
+      problems.push(`${where}.${key}: expected a non-empty string`);
+      return null;
+    }
+    return value.trim();
+  };
+  const int = (key) => {
+    const value = raw[key];
+    if (value === void 0 || value === null) return null;
+    if (!Number.isInteger(value) || value < 0) {
+      problems.push(`${where}.${key}: expected a non-negative integer`);
+      return null;
+    }
+    return value;
+  };
+  const source = str("source") ?? "mlsz";
+  const teamUrl = str("team_url");
+  const club = int("club");
+  const team = str("team");
+  if (!teamUrl && club === null && !team) problems.push(`${where}: set team_url, club or team`);
+  if (teamUrl && !/^https:\/\//.test(teamUrl)) problems.push(`${where}.team_url: expected an https link`);
+  const categoryRaw = str("category") ?? "men";
+  const category = CATEGORIES.includes(categoryRaw) ? categoryRaw : null;
+  if (!category) problems.push(`${where}.category: one of ${CATEGORIES.join(", ")}`);
+  const competition = str("competition");
+  if (competition) {
+    try {
+      new RegExp(competition, "iu");
+    } catch {
+      problems.push(`${where}.competition: not a valid regular expression`);
+    }
+  }
+  const color = str("color");
+  if (color && !COLOR_RE.test(color)) problems.push(`${where}.color: expected #rrggbb`);
+  let include = { league: true, cup: true };
+  if (raw.include !== void 0) {
+    const list2 = raw.include;
+    if (!Array.isArray(list2) || list2.length === 0 || !list2.every((x) => x === "league" || x === "cup")) {
+      problems.push(`${where}.include: a list of league and/or cup`);
+    } else {
+      include = { league: list2.includes("league"), cup: list2.includes("cup") };
+    }
+  }
+  const slug = str("slug") ?? defaultSlug(teamUrl, club, team, category ?? "men");
+  if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
+  if (problems.length > before || !category) return null;
+  return {
+    source,
+    slug,
+    color,
+    teamUrl,
+    team,
+    club,
+    federation: int("federation") ?? 0,
+    category,
+    competition,
+    include
+  };
+}
+function competitionPattern(cal) {
+  return cal.competition ? new RegExp(cal.competition, "iu") : null;
+}
+function loadConfig(yamlText) {
+  const problems = [];
+  let raw;
+  try {
+    raw = (0, import_yaml.parse)(yamlText);
+  } catch (e) {
+    throw new ConfigError([`fixtical.yml is not valid YAML: ${e instanceof Error ? e.message : e}`]);
+  }
+  if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
+  const list2 = raw.calendars;
+  const calendars = [];
+  if (!Array.isArray(list2) || list2.length === 0) {
+    problems.push("calendars: at least one calendar");
+  } else {
+    list2.forEach((item, i) => {
+      const cal = calendar(item, `calendars[${i}]`, problems);
+      if (cal) calendars.push(cal);
+    });
+    const seen = /* @__PURE__ */ new Set();
+    for (const cal of calendars) {
+      if (seen.has(cal.slug)) problems.push(`calendars: slug "${cal.slug}" is used twice`);
+      seen.add(cal.slug);
+    }
+  }
+  if (problems.length) throw new ConfigError(problems);
+  return { calendars };
+}
+async function readConfig(path) {
+  let yaml;
+  try {
+    yaml = await readFile(path, "utf8");
+  } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+    return null;
+  }
+  return loadConfig(yaml);
+}
+
+// node_modules/boolbase/dist/index.js
+function trueFunc() {
+  return true;
+}
+function falseFunc() {
+  return false;
+}
+
+// node_modules/css-what/dist/types.js
+var SelectorType;
+(function(SelectorType2) {
+  SelectorType2["Attribute"] = "attribute";
+  SelectorType2["Pseudo"] = "pseudo";
+  SelectorType2["PseudoElement"] = "pseudo-element";
+  SelectorType2["Tag"] = "tag";
+  SelectorType2["Universal"] = "universal";
+  SelectorType2["Adjacent"] = "adjacent";
+  SelectorType2["Child"] = "child";
+  SelectorType2["Descendant"] = "descendant";
+  SelectorType2["Parent"] = "parent";
+  SelectorType2["Sibling"] = "sibling";
+  SelectorType2["ColumnCombinator"] = "column-combinator";
+})(SelectorType || (SelectorType = {}));
+var AttributeAction;
+(function(AttributeAction2) {
+  AttributeAction2["Any"] = "any";
+  AttributeAction2["Element"] = "element";
+  AttributeAction2["End"] = "end";
+  AttributeAction2["Equals"] = "equals";
+  AttributeAction2["Exists"] = "exists";
+  AttributeAction2["Hyphen"] = "hyphen";
+  AttributeAction2["Not"] = "not";
+  AttributeAction2["Start"] = "start";
+})(AttributeAction || (AttributeAction = {}));
+
+// node_modules/css-what/dist/parse.js
+var reName = /^[^#\\]?(?:\\(?:[\da-f]{1,6}\s?|.)|[\w\u00B0-\uFFFF-])+/;
+var reEscape = /\\([\da-f]{1,6}\s?|(\s)|.)/gi;
+var CharCode;
+(function(CharCode2) {
+  CharCode2[CharCode2["LeftParenthesis"] = 40] = "LeftParenthesis";
+  CharCode2[CharCode2["RightParenthesis"] = 41] = "RightParenthesis";
+  CharCode2[CharCode2["LeftSquareBracket"] = 91] = "LeftSquareBracket";
+  CharCode2[CharCode2["RightSquareBracket"] = 93] = "RightSquareBracket";
+  CharCode2[CharCode2["Comma"] = 44] = "Comma";
+  CharCode2[CharCode2["Period"] = 46] = "Period";
+  CharCode2[CharCode2["Colon"] = 58] = "Colon";
+  CharCode2[CharCode2["SingleQuote"] = 39] = "SingleQuote";
+  CharCode2[CharCode2["DoubleQuote"] = 34] = "DoubleQuote";
+  CharCode2[CharCode2["Plus"] = 43] = "Plus";
+  CharCode2[CharCode2["Tilde"] = 126] = "Tilde";
+  CharCode2[CharCode2["QuestionMark"] = 63] = "QuestionMark";
+  CharCode2[CharCode2["ExclamationMark"] = 33] = "ExclamationMark";
+  CharCode2[CharCode2["Slash"] = 47] = "Slash";
+  CharCode2[CharCode2["Equal"] = 61] = "Equal";
+  CharCode2[CharCode2["Dollar"] = 36] = "Dollar";
+  CharCode2[CharCode2["Pipe"] = 124] = "Pipe";
+  CharCode2[CharCode2["Circumflex"] = 94] = "Circumflex";
+  CharCode2[CharCode2["Asterisk"] = 42] = "Asterisk";
+  CharCode2[CharCode2["GreaterThan"] = 62] = "GreaterThan";
+  CharCode2[CharCode2["LessThan"] = 60] = "LessThan";
+  CharCode2[CharCode2["Hash"] = 35] = "Hash";
+  CharCode2[CharCode2["LowerI"] = 105] = "LowerI";
+  CharCode2[CharCode2["LowerS"] = 115] = "LowerS";
+  CharCode2[CharCode2["BackSlash"] = 92] = "BackSlash";
+  CharCode2[CharCode2["Space"] = 32] = "Space";
+  CharCode2[CharCode2["Tab"] = 9] = "Tab";
+  CharCode2[CharCode2["NewLine"] = 10] = "NewLine";
+  CharCode2[CharCode2["FormFeed"] = 12] = "FormFeed";
+  CharCode2[CharCode2["CarriageReturn"] = 13] = "CarriageReturn";
+})(CharCode || (CharCode = {}));
+var actionTypes = /* @__PURE__ */ new Map([
+  [CharCode.Tilde, AttributeAction.Element],
+  [CharCode.Circumflex, AttributeAction.Start],
+  [CharCode.Dollar, AttributeAction.End],
+  [CharCode.Asterisk, AttributeAction.Any],
+  [CharCode.ExclamationMark, AttributeAction.Not],
+  [CharCode.Pipe, AttributeAction.Hyphen]
+]);
+var unpackPseudos = /* @__PURE__ */ new Set([
+  "has",
+  "not",
+  "matches",
+  "is",
+  "where",
+  "host",
+  "host-context"
+]);
+var pseudosToPseudoElements = /* @__PURE__ */ new Set([
+  "before",
+  "after",
+  "first-line",
+  "first-letter"
+]);
+function isTraversal(selector) {
+  switch (selector.type) {
+    case SelectorType.Adjacent:
+    case SelectorType.Child:
+    case SelectorType.Descendant:
+    case SelectorType.Parent:
+    case SelectorType.Sibling:
+    case SelectorType.ColumnCombinator: {
+      return true;
+    }
+    case SelectorType.Attribute:
+    case SelectorType.Pseudo:
+    case SelectorType.PseudoElement:
+    case SelectorType.Tag:
+    case SelectorType.Universal: {
+      return false;
+    }
+  }
+}
+var stripQuotesFromPseudos = /* @__PURE__ */ new Set(["contains", "icontains"]);
+function funescape(_, escaped, escapedWhitespace) {
+  const high = Number.parseInt(escaped, 16) - 65536;
+  return Number.isNaN(high) || escapedWhitespace ? escaped : high < 0 ? (
+    // BMP codepoint
+    String.fromCharCode(high + 65536)
+  ) : (
+    // Supplemental Plane codepoint (surrogate pair)
+    String.fromCharCode(high >> 10 | 55296, high & 1023 | 56320)
+  );
+}
+function unescapeCSS(cssString) {
+  return cssString.replace(reEscape, funescape);
+}
+function isQuote(c) {
+  return c === CharCode.SingleQuote || c === CharCode.DoubleQuote;
+}
+function isWhitespace(c) {
+  return c === CharCode.Space || c === CharCode.Tab || c === CharCode.NewLine || c === CharCode.FormFeed || c === CharCode.CarriageReturn;
+}
+function parse(selector) {
+  const subselects2 = [];
+  const endIndex = parseSelector(subselects2, `${selector}`, 0);
+  if (endIndex < selector.length) {
+    throw new Error(`Unmatched selector: ${selector.slice(endIndex)}`);
+  }
+  return subselects2;
+}
+function parseSelector(subselects2, selector, selectorIndex) {
+  let tokens = [];
+  function getName2(offset) {
+    const match = selector.slice(selectorIndex + offset).match(reName);
+    if (!match) {
+      throw new Error(`Expected name, found ${selector.slice(selectorIndex)}`);
+    }
+    const [name] = match;
+    selectorIndex += offset + name.length;
+    return unescapeCSS(name);
+  }
+  function stripWhitespace(offset) {
+    selectorIndex += offset;
+    while (selectorIndex < selector.length && isWhitespace(selector.charCodeAt(selectorIndex))) {
+      selectorIndex++;
+    }
+  }
+  function readValueWithParenthesis() {
+    selectorIndex += 1;
+    const start = selectorIndex;
+    for (let counter = 1; selectorIndex < selector.length; selectorIndex++) {
+      switch (selector.charCodeAt(selectorIndex)) {
+        case CharCode.BackSlash: {
+          selectorIndex += 1;
+          break;
+        }
+        case CharCode.LeftParenthesis: {
+          counter += 1;
+          break;
+        }
+        case CharCode.RightParenthesis: {
+          counter -= 1;
+          if (counter === 0) {
+            return unescapeCSS(selector.slice(start, selectorIndex++));
+          }
+          break;
+        }
+      }
+    }
+    throw new Error("Parenthesis not matched");
+  }
+  function ensureNotTraversal() {
+    if (tokens.length > 0 && isTraversal(tokens[tokens.length - 1])) {
+      throw new Error("Did not expect successive traversals.");
+    }
+  }
+  function addTraversal(type) {
+    if (tokens.length > 0 && tokens[tokens.length - 1].type === SelectorType.Descendant) {
+      tokens[tokens.length - 1].type = type;
+      return;
+    }
+    ensureNotTraversal();
+    tokens.push({ type });
+  }
+  function addSpecialAttribute(name, action) {
+    tokens.push({
+      type: SelectorType.Attribute,
+      name,
+      action,
+      value: getName2(1),
+      namespace: null,
+      ignoreCase: "quirks"
+    });
+  }
+  function finalizeSubselector() {
+    if (tokens.length > 0 && tokens[tokens.length - 1].type === SelectorType.Descendant) {
+      tokens.pop();
+    }
+    if (tokens.length === 0) {
+      throw new Error("Empty sub-selector");
+    }
+    subselects2.push(tokens);
+  }
+  stripWhitespace(0);
+  if (selector.length === selectorIndex) {
+    return selectorIndex;
+  }
+  loop: while (selectorIndex < selector.length) {
+    const firstChar = selector.charCodeAt(selectorIndex);
+    switch (firstChar) {
+      // Whitespace
+      case CharCode.Space:
+      case CharCode.Tab:
+      case CharCode.NewLine:
+      case CharCode.FormFeed:
+      case CharCode.CarriageReturn: {
+        if (tokens.length === 0 || tokens[0].type !== SelectorType.Descendant) {
+          ensureNotTraversal();
+          tokens.push({ type: SelectorType.Descendant });
+        }
+        stripWhitespace(1);
+        break;
+      }
+      // Traversals
+      case CharCode.GreaterThan: {
+        addTraversal(SelectorType.Child);
+        stripWhitespace(1);
+        break;
+      }
+      case CharCode.LessThan: {
+        addTraversal(SelectorType.Parent);
+        stripWhitespace(1);
+        break;
+      }
+      case CharCode.Tilde: {
+        addTraversal(SelectorType.Sibling);
+        stripWhitespace(1);
+        break;
+      }
+      case CharCode.Plus: {
+        addTraversal(SelectorType.Adjacent);
+        stripWhitespace(1);
+        break;
+      }
+      // Special attribute selectors: .class, #id
+      case CharCode.Period: {
+        addSpecialAttribute("class", AttributeAction.Element);
+        break;
+      }
+      case CharCode.Hash: {
+        addSpecialAttribute("id", AttributeAction.Equals);
+        break;
+      }
+      case CharCode.LeftSquareBracket: {
+        stripWhitespace(1);
+        let name;
+        let namespace = null;
+        if (selector.charCodeAt(selectorIndex) === CharCode.Pipe) {
+          name = getName2(1);
+        } else if (selector.startsWith("*|", selectorIndex)) {
+          namespace = "*";
+          name = getName2(2);
+        } else {
+          name = getName2(0);
+          if (selector.charCodeAt(selectorIndex) === CharCode.Pipe && selector.charCodeAt(selectorIndex + 1) !== CharCode.Equal) {
+            namespace = name;
+            name = getName2(1);
+          }
+        }
+        stripWhitespace(0);
+        let action = AttributeAction.Exists;
+        const possibleAction = actionTypes.get(selector.charCodeAt(selectorIndex));
+        if (possibleAction) {
+          action = possibleAction;
+          if (selector.charCodeAt(selectorIndex + 1) !== CharCode.Equal) {
+            throw new Error("Expected `=`");
+          }
+          stripWhitespace(2);
+        } else if (selector.charCodeAt(selectorIndex) === CharCode.Equal) {
+          action = AttributeAction.Equals;
+          stripWhitespace(1);
+        }
+        let value = "";
+        let ignoreCase = null;
+        if (action !== "exists") {
+          if (isQuote(selector.charCodeAt(selectorIndex))) {
+            const quote = selector.charCodeAt(selectorIndex);
+            selectorIndex += 1;
+            const sectionStart = selectorIndex;
+            while (selectorIndex < selector.length && selector.charCodeAt(selectorIndex) !== quote) {
+              selectorIndex += // Skip next character if it is escaped
+              selector.charCodeAt(selectorIndex) === CharCode.BackSlash ? 2 : 1;
+            }
+            if (selector.charCodeAt(selectorIndex) !== quote) {
+              throw new Error("Attribute value didn't end");
+            }
+            value = unescapeCSS(selector.slice(sectionStart, selectorIndex));
+            selectorIndex += 1;
+          } else {
+            const valueStart = selectorIndex;
+            while (selectorIndex < selector.length && !isWhitespace(selector.charCodeAt(selectorIndex)) && selector.charCodeAt(selectorIndex) !== CharCode.RightSquareBracket) {
+              selectorIndex += // Skip next character if it is escaped
+              selector.charCodeAt(selectorIndex) === CharCode.BackSlash ? 2 : 1;
+            }
+            value = unescapeCSS(selector.slice(valueStart, selectorIndex));
+          }
+          stripWhitespace(0);
+          switch (selector.charCodeAt(selectorIndex) | 32) {
+            // If the forceIgnore flag is set (either `i` or `s`), use that value
+            case CharCode.LowerI: {
+              ignoreCase = true;
+              stripWhitespace(1);
+              break;
+            }
+            case CharCode.LowerS: {
+              ignoreCase = false;
+              stripWhitespace(1);
+              break;
+            }
+          }
+        }
+        if (selector.charCodeAt(selectorIndex) !== CharCode.RightSquareBracket) {
+          throw new Error("Attribute selector didn't terminate");
+        }
+        selectorIndex += 1;
+        const attributeSelector = {
+          type: SelectorType.Attribute,
+          name,
+          action,
+          value,
+          namespace,
+          ignoreCase
+        };
+        tokens.push(attributeSelector);
+        break;
+      }
+      case CharCode.Colon: {
+        if (selector.charCodeAt(selectorIndex + 1) === CharCode.Colon) {
+          tokens.push({
+            type: SelectorType.PseudoElement,
+            name: getName2(2).toLowerCase(),
+            data: selector.charCodeAt(selectorIndex) === CharCode.LeftParenthesis ? readValueWithParenthesis() : null
+          });
+          break;
+        }
+        const name = getName2(1).toLowerCase();
+        if (pseudosToPseudoElements.has(name)) {
+          tokens.push({
+            type: SelectorType.PseudoElement,
+            name,
+            data: null
+          });
+          break;
+        }
+        let data = null;
+        if (selector.charCodeAt(selectorIndex) === CharCode.LeftParenthesis) {
+          if (unpackPseudos.has(name)) {
+            if (isQuote(selector.charCodeAt(selectorIndex + 1))) {
+              throw new Error(`Pseudo-selector ${name} cannot be quoted`);
+            }
+            data = [];
+            selectorIndex = parseSelector(data, selector, selectorIndex + 1);
+            if (selector.charCodeAt(selectorIndex) !== CharCode.RightParenthesis) {
+              throw new Error(`Missing closing parenthesis in :${name} (${selector})`);
+            }
+            selectorIndex += 1;
+          } else {
+            data = readValueWithParenthesis();
+            if (stripQuotesFromPseudos.has(name)) {
+              const quot = data.charCodeAt(0);
+              if (quot === data.charCodeAt(data.length - 1) && isQuote(quot)) {
+                data = data.slice(1, -1);
+              }
+            }
+            data = unescapeCSS(data);
+          }
+        }
+        tokens.push({ type: SelectorType.Pseudo, name, data });
+        break;
+      }
+      case CharCode.Comma: {
+        finalizeSubselector();
+        tokens = [];
+        stripWhitespace(1);
+        break;
+      }
+      default: {
+        if (selector.startsWith("/*", selectorIndex)) {
+          const endIndex = selector.indexOf("*/", selectorIndex + 2);
+          if (endIndex === -1) {
+            throw new Error("Comment was not terminated");
+          }
+          selectorIndex = endIndex + 2;
+          if (tokens.length === 0) {
+            stripWhitespace(0);
+          }
+          break;
+        }
+        let namespace = null;
+        let name;
+        if (firstChar === CharCode.Asterisk) {
+          selectorIndex += 1;
+          name = "*";
+        } else if (firstChar === CharCode.Pipe) {
+          name = "";
+          if (selector.charCodeAt(selectorIndex + 1) === CharCode.Pipe) {
+            addTraversal(SelectorType.ColumnCombinator);
+            stripWhitespace(2);
+            break;
+          }
+        } else if (reName.test(selector.slice(selectorIndex))) {
+          name = getName2(0);
+        } else {
+          break loop;
+        }
+        if (selector.charCodeAt(selectorIndex) === CharCode.Pipe && selector.charCodeAt(selectorIndex + 1) !== CharCode.Pipe) {
+          namespace = name;
+          if (selector.charCodeAt(selectorIndex + 1) === CharCode.Asterisk) {
+            name = "*";
+            selectorIndex += 2;
+          } else {
+            name = getName2(1);
+          }
+        }
+        tokens.push(name === "*" ? { type: SelectorType.Universal, namespace } : { type: SelectorType.Tag, name, namespace });
+      }
+    }
+  }
+  finalizeSubselector();
+  return selectorIndex;
+}
+
 // node_modules/css-select/dist/attributes.js
 var reChars = /[-[\]{}()*+?.,\\^$|#\s]/g;
 var whitespaceRe = /\s/;
@@ -10546,12 +10705,12 @@ function compileNth(reverse, ofType) {
   };
 }
 var filters = {
-  contains(next, text3, options) {
+  contains(next, text2, options) {
     const { getText: getText2 } = options.adapter;
-    return cacheParentResults(next, options, (element) => getText2(element).includes(text3));
+    return cacheParentResults(next, options, (element) => getText2(element).includes(text2));
   },
-  icontains(next, text3, options) {
-    const itext = text3.toLowerCase();
+  icontains(next, text2, options) {
+    const itext = text2.toLowerCase();
     const { getText: getText2 } = options.adapter;
     return cacheParentResults(next, options, (element) => getText2(element).toLowerCase().includes(itext));
   },
@@ -12648,6 +12807,29 @@ function parseDocument(data, options) {
   return handler.root;
 }
 
+// src/sources/common.ts
+async function page(ctx, url, what, form, headers) {
+  const key = form ? `${url}?${new URLSearchParams(form)}` : url;
+  const cached = ctx.pages.get(key);
+  if (cached !== void 0) return cached;
+  const body = await ctx.client.text(url, what, form, headers);
+  ctx.pages.set(key, body);
+  return body;
+}
+var parse3 = (html) => parseDocument(html).children;
+var all = (root, selector) => selectAll(selector, root);
+var one = (root, selector) => selectOne(selector, root);
+var attr = (el, name) => el ? getAttributeValue(el, name) : void 0;
+var text = (el) => el ? textContent(el) : void 0;
+function isCup(competition) {
+  return /kupa/.test(fold(competition));
+}
+function dateTime(match) {
+  const [, y, mo, d, hh, mm] = match;
+  const two = (s) => String(s).padStart(2, "0");
+  return { date: `${y}-${two(mo)}-${two(d)}`, time: hh !== void 0 ? `${two(hh)}:${mm}` : null };
+}
+
 // src/sources/mlsz.ts
 var SITE = "https://adatbank.mlsz.hu";
 var AJAX = "https://ada1bank.mlsz.hu/libs/ajax.php";
@@ -12655,30 +12837,21 @@ var TEAM_URL_RE = /^https:\/\/adatbank\.mlsz\.hu\/club\/(\d+)\/(\d+)\/(\d+)\/(\d
 var TEAM_HREF_RE = /\/club\/(\d+)\/(\d+)\/(\d+)\/(\d+)\/(\d+)\.html$/;
 var DATE_RE2 = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.(?:\s*(\d{1,2}):(\d{2}))?/;
 var MAX_LEAGUES_SCANNED = 8;
-function fold2(text3) {
-  return text3.normalize("NFD").replace(new RegExp("\\p{M}", "gu"), "").toLowerCase();
-}
-function isCup(competition) {
-  return /kupa/.test(fold2(competition));
-}
 function categoryOf(competition) {
-  const name = fold2(competition);
+  const name = fold(competition);
   if (/\bu\s?-?\d{1,2}\b/.test(name)) return "youth";
   const women = /\b(noi|leany)\b/.test(name);
   if (/futsal/.test(name)) return women ? "women-futsal" : "futsal";
   return women ? "women" : "men";
 }
-function parseTeamUrl(url) {
-  const m = TEAM_URL_RE.exec(url);
+function teamRef(m) {
   if (!m) return null;
   const [season, federation, league, round, team] = m.slice(1).map(Number);
   return { season, federation, league, round, team };
 }
-var parse3 = (html) => parseDocument(html).children;
-var all = (root, selector) => selectAll(selector, root);
-var one = (root, selector) => selectOne(selector, root);
-var attr = (el, name) => el ? getAttributeValue(el, name) : void 0;
-var text = (el) => el ? textContent(el) : void 0;
+function parseTeamUrl(url) {
+  return teamRef(TEAM_URL_RE.exec(url));
+}
 function teamPageUrl(ref) {
   return `${SITE}/club/${ref.season}/${ref.federation}/${ref.league}/${ref.round}/${ref.team}.html`;
 }
@@ -12702,10 +12875,7 @@ function parseLeagues(body) {
   return leagues.filter((l) => l && /^\d+$/.test(String(l.id)) && typeof l.name === "string").map((l) => ({ id: Number(l.id), name: String(l.name).trim() }));
 }
 function refOf(href) {
-  const m = href ? TEAM_HREF_RE.exec(href) : null;
-  if (!m) return null;
-  const [season, federation, league, round, team] = m.slice(1).map(Number);
-  return { season, federation, league, round, team };
+  return teamRef(href ? TEAM_HREF_RE.exec(href) : null);
 }
 function findTeam(html, club) {
   const logo = new RegExp(`/${club}\\.\\w+$`);
@@ -12748,14 +12918,11 @@ function parseSchedule(html, competition) {
     const away = attr(one(block, ".away_team a"), "title")?.trim();
     const when = DATE_RE2.exec(text(one(block, ".team_sorsolas_date"))?.replace(/\s+/g, " ") ?? "");
     if (!/^\d+$/.test(id) || !home || !away || !when) continue;
-    const [, y, mo, d, hh, mm] = when;
-    const two = (s) => String(s).padStart(2, "0");
     const href = attr(one(block, 'a[href*="/match/"]'), "href") ?? "";
     fixtures.push({
       source: "mlsz",
       id,
-      date: `${y}-${two(mo)}-${two(d)}`,
-      time: hh !== void 0 ? `${two(hh)}:${mm}` : null,
+      ...dateTime(when),
       home,
       away,
       venue: text(one(block, ".team_sorsolas_arena"))?.replace(/\s+/g, " ").trim() ?? "",
@@ -12768,14 +12935,6 @@ function parseSchedule(html, competition) {
     throw new SourceError("team page: schedule rows without teams or dates");
   }
   return fixtures;
-}
-async function page(ctx, url, what, form) {
-  const key = form ? `${url}?${new URLSearchParams(form)}` : url;
-  const cached = ctx.pages.get(key);
-  if (cached !== void 0) return cached;
-  const body = await ctx.client.text(url, what, form);
-  ctx.pages.set(key, body);
-  return body;
 }
 function settingsKey(cal) {
   return JSON.stringify([cal.teamUrl, cal.club, cal.federation, cal.category, cal.competition, cal.include]);
@@ -12827,14 +12986,7 @@ var mlsz = {
     }
     if (club === null) throw new SourceError("team page: club not found");
     if (!start) {
-      start = await scan(
-        ctx,
-        season,
-        federation,
-        club,
-        category,
-        cal.competition ? new RegExp(cal.competition, "iu") : null
-      );
+      start = await scan(ctx, season, federation, club, category, competitionPattern(cal));
     }
     const html = await page(ctx, teamPageUrl(start), "team page");
     const entries = parseClubTeams(html);
@@ -12857,9 +13009,7 @@ var mlsz = {
       const html = await page(ctx, teamPageUrl(team), "team page");
       for (const f of parseSchedule(html, team.competition)) if (!byId.has(f.id)) byId.set(f.id, f);
     }
-    return [...byId.values()].sort(
-      (a, b) => a.date.localeCompare(b.date) || (a.time ?? "").localeCompare(b.time ?? "") || a.id.localeCompare(b.id)
-    );
+    return [...byId.values()].sort(byKickoff);
   }
 };
 
@@ -12867,22 +13017,13 @@ var mlsz = {
 var SITE2 = "https://hvf-web.dataproject.com";
 var GENDER_WORDS = { men: "F\xE9rfi", women: "N\u0151i" };
 var DATE_RE3 = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.(?:\s*-\s*(\d{1,2}):(\d{2}))?/;
-var parse4 = (html) => parseDocument(html).children;
-var all2 = (root, selector) => selectAll(selector, root);
-var one2 = (root, selector) => selectOne(selector, root);
-var text2 = (root, selector) => {
-  const el = one2(root, selector);
-  return el ? textContent(el).replace(/\s+/g, " ").trim() : "";
-};
-function isCup2(competition) {
-  return /kupa/i.test(competition);
-}
+var cell = (root, selector) => text(one(root, selector))?.replace(/\s+/g, " ").trim() ?? "";
 function parseSeasons2(html) {
-  const seasons = all2(parse4(html), "ul.dropdown1 > li").map((li) => {
+  const seasons = all(parse3(html), "ul.dropdown1 > li").map((li) => {
     const label = textContent(
       li.children.find((c) => c.type === "tag" && c.name === "a") ?? []
     ).trim();
-    const competitions = all2(li, "ul.dropdown2 a[href*='CompetitionHome.aspx?ID=']").map((a) => ({
+    const competitions = all(li, "ul.dropdown2 a[href*='CompetitionHome.aspx?ID=']").map((a) => ({
       id: Number(/ID=(\d+)/.exec(getAttributeValue(a, "href") ?? "")?.[1]),
       name: textContent(a).replace(/\s+/g, " ").trim()
     }));
@@ -12893,42 +13034,32 @@ function parseSeasons2(html) {
 }
 function pickCompetitions(competitions, cal) {
   const word = GENDER_WORDS[cal.category];
-  const narrow = cal.competition ? new RegExp(cal.competition, "iu") : null;
-  return competitions.filter((c) => c.name.includes(word) && (!narrow || narrow.test(c.name))).filter((c) => isCup2(c.name) ? cal.include.cup : cal.include.league).sort((a, b) => Number(isCup2(a.name)) - Number(isCup2(b.name)));
+  const narrow = competitionPattern(cal);
+  return competitions.filter((c) => c.name.includes(word) && (!narrow || narrow.test(c.name))).filter((c) => isCup(c.name) ? cal.include.cup : cal.include.league).sort((a, b) => Number(isCup(a.name)) - Number(isCup(b.name)));
 }
 function parseMatches(html, competition, team) {
   const fixtures = /* @__PURE__ */ new Map();
-  for (const row of all2(parse4(html), "div[id$='_MatchRow']")) {
-    const link = one2(row, "[onclick*='mID=']");
+  for (const row of all(parse3(html), "div[id$='_MatchRow']")) {
+    const link = one(row, "[onclick*='mID=']");
     const id = /mID=(\d+)/.exec(link ? getAttributeValue(link, "onclick") ?? "" : "")?.[1];
-    const home = text2(row, "span[id$='HomeTeamName']");
-    const away = text2(row, "span[id$='GuestTeamName']");
-    const when = DATE_RE3.exec(text2(row, "span[id$='DataOra']"));
+    const home = cell(row, "span[id$='HomeTeamName']");
+    const away = cell(row, "span[id$='GuestTeamName']");
+    const when = DATE_RE3.exec(cell(row, "span[id$='DataOra']"));
     if (!id || fixtures.has(id) || !when || home !== team && away !== team) continue;
-    const [, y, mo, d, hh, mm] = when;
-    const two = (s) => String(s).padStart(2, "0");
-    const sets = [text2(row, "span[id$='SetCasa']"), text2(row, "span[id$='SetOspiti']")];
+    const sets = [cell(row, "span[id$='SetCasa']"), cell(row, "span[id$='SetOspiti']")];
     fixtures.set(id, {
       source: "mrsz",
       id,
-      date: `${y}-${two(mo)}-${two(d)}`,
-      time: hh !== void 0 ? `${two(hh)}:${mm}` : null,
+      ...dateTime(when),
       home,
       away,
-      venue: teamName(text2(row, "span[id$='Palasport']")),
+      venue: teamName(cell(row, "span[id$='Palasport']")),
       competition: competition.name,
       result: sets.every((s) => /^\d+$/.test(s)) ? `${sets[0]} - ${sets[1]}` : null,
       url: `${SITE2}/MatchStatistics.aspx?mID=${id}&ID=${competition.id}`
     });
   }
   return [...fixtures.values()];
-}
-async function page2(ctx, url, what) {
-  const cached = ctx.pages.get(url);
-  if (cached !== void 0) return cached;
-  const body = await ctx.client.text(url, what);
-  ctx.pages.set(url, body);
-  return body;
 }
 function settingsKey2(cal) {
   return JSON.stringify([cal.team, cal.category, cal.competition, cal.include]);
@@ -12945,7 +13076,7 @@ var mrsz = {
     return problems;
   },
   async resolve(cal, cached, ctx) {
-    const { season, competitions } = parseSeasons2(await page2(ctx, `${SITE2}/MainHome.aspx`, "season list"));
+    const { season, competitions } = parseSeasons2(await page(ctx, `${SITE2}/MainHome.aspx`, "season list"));
     const picked = pickCompetitions(competitions, cal);
     if (picked.length) return { key: settingsKey2(cal), season, team: cal.team ?? "", competitions: picked };
     if (isMrszResolved(cached) && cached.key === settingsKey2(cal)) return cached;
@@ -12955,10 +13086,10 @@ var mrsz = {
     if (!isMrszResolved(resolved)) throw new SourceError("competitions not resolved");
     const fixtures = [];
     for (const competition of resolved.competitions) {
-      const html = await page2(ctx, `${SITE2}/CompetitionMatches.aspx?ID=${competition.id}`, "match list");
+      const html = await page(ctx, `${SITE2}/CompetitionMatches.aspx?ID=${competition.id}`, "match list");
       fixtures.push(...parseMatches(html, competition, resolved.team));
     }
-    return fixtures.sort((a, b) => `${a.date} ${a.time ?? ""}`.localeCompare(`${b.date} ${b.time ?? ""}`));
+    return fixtures.sort(byKickoff);
   }
 };
 
@@ -12967,16 +13098,10 @@ var API = "https://ivr.waterpolo.hu/api/public";
 var SITE3 = "https://www.waterpolo.hu";
 var ZONE = "Europe/Budapest";
 var GENDERS = { men: "male", women: "female" };
-function isCup3(competition) {
-  return /kupa/i.test(competition);
-}
 async function api(ctx, path, what) {
   const key = ctx.keys?.mvlsz;
   if (!key) throw new SourceError("FIXTICAL_MVLSZ_KEY is not set");
-  const url = `${API}/${path}`;
-  const cached = ctx.pages.get(url);
-  const body = cached ?? await ctx.client.text(url, what, void 0, { "X-AUTH-API-KEY": key });
-  ctx.pages.set(url, body);
+  const body = await page(ctx, `${API}/${path}`, what, void 0, { "X-AUTH-API-KEY": key });
   try {
     return JSON.parse(body);
   } catch {
@@ -12985,15 +13110,15 @@ async function api(ctx, path, what) {
 }
 function pickTeams(entries, cal) {
   const gender = GENDERS[cal.category];
-  const competition = cal.competition ? new RegExp(cal.competition, "iu") : null;
+  const competition = competitionPattern(cal);
   const fits = entries.filter((e) => {
     const c = e.competition;
     if (!c || c.gender !== gender || competition && !competition.test(c.name)) return false;
-    return isCup3(c.name) ? cal.include.cup : cal.include.league;
+    return isCup(c.name) ? cal.include.cup : cal.include.league;
   });
   if (!fits.length) return null;
   const season = Math.max(...fits.map((e) => e.season_id));
-  const teams = fits.filter((e) => e.season_id === season).sort((a, b) => Number(isCup3(a.competition?.name ?? "")) - Number(isCup3(b.competition?.name ?? ""))).map((e) => ({ entry: e.id, competition: e.competition?.id ?? 0, name: e.competition?.name ?? "" }));
+  const teams = fits.filter((e) => e.season_id === season).sort((a, b) => Number(isCup(a.competition?.name ?? "")) - Number(isCup(b.competition?.name ?? ""))).map((e) => ({ entry: e.id, competition: e.competition?.id ?? 0, name: e.competition?.name ?? "" }));
   return { key: settingsKey3(cal), season, teams };
 }
 function teamName2(t) {
@@ -13031,14 +13156,14 @@ function list(data, what) {
   return items;
 }
 async function games(ctx, competition) {
-  const all3 = [];
-  for (let page3 = 1; page3 <= 20; page3++) {
-    const path = `games?filter[competition_id]=${competition}&include=facility&per_page=500&page=${page3}`;
+  const all2 = [];
+  for (let page2 = 1; page2 <= 20; page2++) {
+    const path = `games?filter[competition_id]=${competition}&include=facility&per_page=500&page=${page2}`;
     const data = await api(ctx, path, "games");
-    all3.push(...list(data, "games"));
-    if (page3 >= Number(data?.last_page ?? 1)) break;
+    all2.push(...list(data, "games"));
+    if (page2 >= Number(data?.last_page ?? 1)) break;
   }
-  return all3;
+  return all2;
 }
 var mvlsz = {
   name: "mvlsz",
@@ -13070,7 +13195,7 @@ var mvlsz = {
         if (fixture) fixtures.push(fixture);
       }
     }
-    return fixtures.sort((a, b) => `${a.date} ${a.time ?? ""}`.localeCompare(`${b.date} ${b.time ?? ""}`));
+    return fixtures.sort(byKickoff);
   }
 };
 
@@ -13156,151 +13281,6 @@ async function build(config, state, client, now, options = {}) {
   return { results, state: next };
 }
 
-// src/config.ts
-var import_yaml = __toESM(require_dist(), 1);
-import { readFile } from "node:fs/promises";
-var CATEGORIES = ["men", "women", "futsal", "women-futsal", "youth"];
-var ConfigError = class extends Error {
-  problems;
-  constructor(problems) {
-    super(`invalid configuration:
-  ${problems.join("\n  ")}`);
-    this.name = "ConfigError";
-    this.problems = problems;
-  }
-};
-var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
-var COLOR_RE = /^#[0-9a-fA-F]{6}$/;
-var CALENDAR_KEYS = /* @__PURE__ */ new Set([
-  "source",
-  "slug",
-  "color",
-  "team_url",
-  "team",
-  "club",
-  "federation",
-  "category",
-  "competition",
-  "include"
-]);
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function defaultSlug(teamUrl, club, team, category) {
-  if (teamUrl) return `team-${/(\d+)\.html$/.exec(teamUrl)?.[1] ?? "x"}`;
-  if (club === null && team)
-    return team.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "team";
-  return category === "men" ? `club-${club}` : `club-${club}-${category}`;
-}
-function calendar(raw, where, problems) {
-  if (!isRecord(raw)) {
-    problems.push(`${where}: expected a mapping`);
-    return null;
-  }
-  const before = problems.length;
-  for (const key of Object.keys(raw)) {
-    if (!CALENDAR_KEYS.has(key)) problems.push(`${where}: unknown key "${key}"`);
-  }
-  const str = (key) => {
-    const value = raw[key];
-    if (value === void 0 || value === null) return null;
-    if (typeof value !== "string" || !value.trim()) {
-      problems.push(`${where}.${key}: expected a non-empty string`);
-      return null;
-    }
-    return value.trim();
-  };
-  const int = (key) => {
-    const value = raw[key];
-    if (value === void 0 || value === null) return null;
-    if (!Number.isInteger(value) || value < 0) {
-      problems.push(`${where}.${key}: expected a non-negative integer`);
-      return null;
-    }
-    return value;
-  };
-  const source = str("source") ?? "mlsz";
-  const teamUrl = str("team_url");
-  const club = int("club");
-  const team = str("team");
-  if (!teamUrl && club === null && !team) problems.push(`${where}: set team_url, club or team`);
-  if (teamUrl && !/^https:\/\//.test(teamUrl)) problems.push(`${where}.team_url: expected an https link`);
-  const categoryRaw = str("category") ?? "men";
-  const category = CATEGORIES.includes(categoryRaw) ? categoryRaw : null;
-  if (!category) problems.push(`${where}.category: one of ${CATEGORIES.join(", ")}`);
-  const competition = str("competition");
-  if (competition) {
-    try {
-      new RegExp(competition, "iu");
-    } catch {
-      problems.push(`${where}.competition: not a valid regular expression`);
-    }
-  }
-  const color = str("color");
-  if (color && !COLOR_RE.test(color)) problems.push(`${where}.color: expected #rrggbb`);
-  let include = { league: true, cup: true };
-  if (raw.include !== void 0) {
-    const list2 = raw.include;
-    if (!Array.isArray(list2) || list2.length === 0 || !list2.every((x) => x === "league" || x === "cup")) {
-      problems.push(`${where}.include: a list of league and/or cup`);
-    } else {
-      include = { league: list2.includes("league"), cup: list2.includes("cup") };
-    }
-  }
-  const slug = str("slug") ?? defaultSlug(teamUrl, club, team, category ?? "men");
-  if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
-  if (problems.length > before || !category) return null;
-  return {
-    source,
-    slug,
-    color,
-    teamUrl,
-    team,
-    club,
-    federation: int("federation") ?? 0,
-    category,
-    competition,
-    include
-  };
-}
-function loadConfig(yamlText) {
-  const problems = [];
-  let raw;
-  try {
-    raw = (0, import_yaml.parse)(yamlText);
-  } catch (e) {
-    throw new ConfigError([`fixtical.yml is not valid YAML: ${e instanceof Error ? e.message : e}`]);
-  }
-  if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
-  const list2 = raw.calendars;
-  const calendars = [];
-  if (!Array.isArray(list2) || list2.length === 0) {
-    problems.push("calendars: at least one calendar");
-  } else {
-    list2.forEach((item, i) => {
-      const cal = calendar(item, `calendars[${i}]`, problems);
-      if (cal) calendars.push(cal);
-    });
-    const seen = /* @__PURE__ */ new Set();
-    for (const cal of calendars) {
-      if (seen.has(cal.slug)) problems.push(`calendars: slug "${cal.slug}" is used twice`);
-      seen.add(cal.slug);
-    }
-  }
-  if (problems.length) throw new ConfigError(problems);
-  return { calendars };
-}
-async function readConfig(path) {
-  let yaml;
-  try {
-    yaml = await readFile(path, "utf8");
-  } catch (e) {
-    if (e.code !== "ENOENT") throw e;
-    return null;
-  }
-  return loadConfig(yaml);
-}
-
 // src/publish/directory.ts
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { join as join2 } from "node:path";
@@ -13336,7 +13316,6 @@ function competitionsOf(fixtures) {
     if (f.competition) counts.set(f.competition, (counts.get(f.competition) ?? 0) + 1);
   return [...counts].sort((a, b) => b[1] - a[1]).map(([name]) => name);
 }
-var COLOR_RE2 = /^#[0-9a-fA-F]{6}$/;
 function textOn(color) {
   const [r, g, b] = [1, 3, 5].map((i) => Number.parseInt(color.slice(i, i + 2), 16) / 255);
   const lin = (c) => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -13351,8 +13330,8 @@ var WORDS = {
   address: "C\xEDm m\xE1s napt\xE1rhoz:",
   file: "Napt\xE1rf\xE1jl"
 };
-function escapeHtml(text3) {
-  return text3.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+function escapeHtml(text2) {
+  return text2.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 function subscribeLinks(feedUrl) {
   const webcal = feedUrl.replace(/^https?:\/\//, "webcal://");
@@ -13373,7 +13352,7 @@ ${name}
     }
     const url = `${base}${f.slug}.ics`;
     const { webcal, google } = subscribeLinks(url);
-    const color = f.color && COLOR_RE2.test(f.color) ? f.color : null;
+    const color = f.color && COLOR_RE.test(f.color) ? f.color : null;
     const style = color ? ` style="--cal: ${color}; --on-cal: ${textOn(color)}"` : "";
     return [
       `    <li${style}>`,
@@ -13439,10 +13418,10 @@ function isCalendarState(value) {
   const v = value;
   return !!v && typeof v === "object" && Array.isArray(v.fixtures) && (v.resolved === null || typeof v.resolved === "object");
 }
-function parseState(text3) {
-  if (!text3) return emptyState();
+function parseState(text2) {
+  if (!text2) return emptyState();
   try {
-    const data = JSON.parse(text3);
+    const data = JSON.parse(text2);
     if (data?.schema !== 1 || typeof data.calendars !== "object" || data.calendars === null)
       return emptyState();
     const calendars = {};
@@ -13452,7 +13431,7 @@ function parseState(text3) {
     const places = typeof data.places === "object" && data.places !== null && !Array.isArray(data.places) ? data.places : {};
     const notes = {};
     if (typeof data.notes === "object" && data.notes !== null) {
-      for (const [name, text4] of Object.entries(data.notes)) if (typeof text4 === "string") notes[name] = text4;
+      for (const [name, text3] of Object.entries(data.notes)) if (typeof text3 === "string") notes[name] = text3;
     }
     return { schema: 1, calendars, places, ...Object.keys(notes).length ? { notes } : {} };
   } catch {
@@ -13473,7 +13452,7 @@ async function writeAtomic(path, content) {
   await writeFile(tmp, content, "utf8");
   await rename(tmp, path);
 }
-async function writeDirectory(dir, results, state, page3 = {}) {
+async function writeDirectory(dir, results, state, page2 = {}) {
   await mkdir(dir, { recursive: true });
   const written = [];
   for (const r of results) {
@@ -13487,7 +13466,7 @@ async function writeDirectory(dir, results, state, page3 = {}) {
     join2(dir, "index.html"),
     indexHtml(
       results.filter((r) => r.ics).map((r) => ({ ...r, competitions: competitionsOf(r.fixtures) })),
-      page3
+      page2
     )
   );
   const { notes: _notes, ...published } = state;

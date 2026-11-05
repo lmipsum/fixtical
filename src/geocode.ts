@@ -1,4 +1,5 @@
 import { defaultFetch, type FetchLike } from "./http.ts";
+import { fold, sleep } from "./util.ts";
 
 /** Where a venue is: its street address and coordinates. */
 export interface Place {
@@ -29,10 +30,6 @@ const RETRY_AFTER_MS = 30 * 86400 * 1000;
 /** New venues looked up in one build at most; the rest wait for the next build. */
 const MAX_LOOKUPS = 20;
 const GENERIC_WORDS = new Set(["uj", "labdarugo", "fc"]);
-
-function fold(text: string): string {
-  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-}
 
 /**
  * The venue's name as the source writes it, then shortened the ways
@@ -75,7 +72,7 @@ export class Geocoder {
   constructor(options: GeocoderOptions = {}) {
     this.googleKey = options.googleKey || null;
     this.fetchFn = options.fetch ?? defaultFetch;
-    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.sleep = options.sleep ?? sleep;
   }
 
   private stands(entry: PlaceEntry | undefined, now: Date): boolean {
@@ -191,6 +188,11 @@ export class Geocoder {
       source: "osm",
     };
   }
+}
+
+/** A place's address: its street, then its postcode and town. */
+export function placeAddress(place: Place): string {
+  return [place.street, place.town].filter(Boolean).join(", ");
 }
 
 /** The places found, by venue. */

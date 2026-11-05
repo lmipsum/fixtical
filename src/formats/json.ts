@@ -1,4 +1,4 @@
-import type { Place } from "../geocode.ts";
+import { type Place, placeAddress } from "../geocode.ts";
 import { type Fixture, kickoff } from "../model.ts";
 import { teamName } from "../team-names.ts";
 
@@ -58,9 +58,7 @@ export function buildJson(
         away: teamName(f.away),
         at_home: team === f.home ? true : team === f.away ? false : null,
         venue: f.venue,
-        location: place
-          ? { address: [place.street, place.town].filter(Boolean).join(", "), lat: place.lat, lon: place.lon }
-          : null,
+        location: place ? { address: placeAddress(place), lat: place.lat, lon: place.lon } : null,
         competition: f.competition,
         result: f.result,
         url: f.url,

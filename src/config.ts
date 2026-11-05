@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { parse as parseYaml } from "yaml";
+import { isRecord } from "./util.ts";
 
 export const CATEGORIES = ["men", "women", "futsal", "women-futsal", "youth"] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -35,7 +36,8 @@ export class ConfigError extends Error {
 }
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
-const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+/** A colour setting: #rrggbb. */
+export const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 const CALENDAR_KEYS = new Set([
   "source",
   "slug",
@@ -48,10 +50,6 @@ const CALENDAR_KEYS = new Set([
   "competition",
   "include",
 ]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function defaultSlug(
   teamUrl: string | null,
@@ -147,6 +145,11 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
     competition,
     include,
   };
+}
+
+/** A calendar's `competition` setting as a regular expression, or null without one. */
+export function competitionPattern(cal: CalendarConfig): RegExp | null {
+  return cal.competition ? new RegExp(cal.competition, "iu") : null;
 }
 
 /** The configuration from a fixtical.yml text. */

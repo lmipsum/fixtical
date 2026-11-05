@@ -1,3 +1,5 @@
+import { sleep } from "./util.ts";
+
 /** A source could not be read. The message names what failed, never a credential. */
 export class SourceError extends Error {
   constructor(message: string) {
@@ -36,7 +38,7 @@ export class Client {
 
   constructor(options: ClientOptions = {}) {
     this.fetchFn = options.fetch ?? defaultFetch;
-    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.sleep = options.sleep ?? sleep;
     this.now = options.now ?? Date.now;
     this.minGapMs = options.minGapMs ?? 2000;
     this.timeoutMs = options.timeoutMs ?? 20000;

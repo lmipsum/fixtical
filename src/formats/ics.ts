@@ -1,5 +1,5 @@
 import type { Annotation } from "../annotations.ts";
-import type { Place } from "../geocode.ts";
+import { type Place, placeAddress } from "../geocode.ts";
 import { type Fixture, kickoff } from "../model.ts";
 import { teamName } from "../team-names.ts";
 import { addDays, localDate } from "../time.ts";
@@ -68,7 +68,7 @@ function dateValue(date: string): string {
 export function locationLines(venue: string, place: Place | undefined): string[] {
   if (!venue) return [];
   if (!place) return [`LOCATION:${escapeText(venue)}`];
-  const address = [place.street, place.town].filter(Boolean).join(", ");
+  const address = placeAddress(place);
   const full = `${venue}, ${address}`;
   return [
     `LOCATION:${escapeText(full)}`,

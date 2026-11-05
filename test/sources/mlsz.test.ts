@@ -5,7 +5,6 @@ import {
   categoryOf,
   clubOf,
   findTeam,
-  isCup,
   mlsz,
   parseClubTeams,
   parseLeagues,
@@ -77,8 +76,6 @@ describe("parsers", () => {
     expect(categoryOf("MLSZ Országos U19 Kiemelt")).toBe("youth");
     expect(categoryOf("MLSZ Országos Leány Futsal U17 Keleti csoport")).toBe("youth");
     expect(categoryOf("U15 leány")).toBe("youth");
-    expect(isCup("Pest Vármegyei Kupa")).toBe(true);
-    expect(isCup("NB III. Dél-Keleti csoport")).toBe(false);
   });
 
   it("finds the club's team by its logo", () => {

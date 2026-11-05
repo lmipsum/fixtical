@@ -1,3 +1,4 @@
+import { COLOR_RE } from "../config.ts";
 import { APPLE_ICON, GOOGLE_ICON } from "./icons.ts";
 
 export interface FeedLink {
@@ -33,8 +34,6 @@ export function competitionsOf(fixtures: readonly { competition: string }[]): st
     if (f.competition) counts.set(f.competition, (counts.get(f.competition) ?? 0) + 1);
   return [...counts].sort((a, b) => b[1] - a[1]).map(([name]) => name);
 }
-
-const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 /** Black or white, whichever reads better on `color`. */
 export function textOn(color: string): string {
