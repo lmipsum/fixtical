@@ -7771,9 +7771,35 @@ function ownTeam(fixtures) {
   return best;
 }
 
+// src/texts.ts
+var FEED = {
+  stale: (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`,
+  /** The match's page, named in the description. */
+  matchPage: (url) => `Adatlap: ${url}`
+};
+var PAGE = {
+  title: "Meccsnapt\xE1rak",
+  intro: "Iratkozz fel egy napt\xE1rra: a meccsek \xE9s a v\xE1ltoz\xE1sok magukt\xF3l friss\xFClnek a napt\xE1radban.",
+  apple: "Feliratkoz\xE1s \u2013 iPhone / Mac",
+  google: "Feliratkoz\xE1s \u2013 Google Napt\xE1r",
+  address: "C\xEDm m\xE1s napt\xE1rhoz:",
+  file: "Napt\xE1rf\xE1jl",
+  /** Section headings by source, futsal apart from football. */
+  sections: {
+    mlsz: "Labdar\xFAg\xE1s \u2013 MLSZ adatbank",
+    "mlsz-futsal": "Futsal \u2013 MLSZ adatbank",
+    mvlsz: "V\xEDzilabda \u2013 MVLSZ adatbank",
+    mrsz: "R\xF6plabda \u2013 MRSZ"
+  }
+};
+var NOTIFY = {
+  failing: (error) => `Nem friss\xFCl (${error}); a kor\xE1bbi menetrend marad kint.`,
+  recovered: "\xDAjra friss\xFCl.",
+  test: "Teszt \xE9rtes\xEDt\xE9s: a napt\xE1r \xE9rtes\xEDt\xE9sei ide \xE9rkeznek."
+};
+
 // src/formats/ics.ts
 var MATCH_LENGTH_MS = 2 * 3600 * 1e3;
-var stale = (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`;
 function escapeText(text2) {
   return text2.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 }
@@ -7819,6 +7845,12 @@ function summary(f) {
   const match = `${teamName(f.home)}${between}${teamName(f.away)}`;
   return f.competition ? `${match} | ${f.competition}` : match;
 }
+function eventLinks(f, note, start, now, timezone) {
+  const lines = note?.lines ?? [];
+  const before = start ? now < start : localDate(now, timezone) <= f.date;
+  if (before && note?.url) return { url: note.url, lines: [...lines, note.url] };
+  return { url: f.url, lines: f.url ? [...lines, FEED.matchPage(f.url)] : lines };
+}
 function event(f, meta, now, extras) {
   const note = extras.annotations?.get(f.date);
   const start = kickoff(f, meta.timezone);
@@ -7826,7 +7858,7 @@ function event(f, meta, now, extras) {
     // The day is set, the time is not yet: an all-day event until it is.
     [`DTSTART;VALUE=DATE:${dateValue(f.date)}`, `DTEND;VALUE=DATE:${dateValue(addDays(f.date, 1))}`]
   );
-  const info = [...note?.lines ?? [], note?.url ?? ""].filter(Boolean);
+  const { url, lines } = eventLinks(f, note, start, now, meta.timezone);
   return [
     "BEGIN:VEVENT",
     `UID:${f.source}-${f.id}@fixtical`,
@@ -7834,8 +7866,8 @@ function event(f, meta, now, extras) {
     ...when,
     `SUMMARY:${escapeText(summary(f))}`,
     ...locationLines(f.venue, extras.places?.get(f.venue)),
-    ...info.length ? [`DESCRIPTION:${escapeText(info.join("\n"))}`] : [],
-    ...f.url ? [`URL:${f.url}`] : [],
+    ...lines.length ? [`DESCRIPTION:${escapeText(lines.join("\n"))}`] : [],
+    ...url ? [`URL:${url}`] : [],
     "END:VEVENT"
   ];
 }
@@ -7847,7 +7879,7 @@ function staleEvent(meta, since, now) {
     `DTSTAMP:${utcStamp(now)}`,
     `DTSTART;VALUE=DATE:${dateValue(today)}`,
     `DTEND;VALUE=DATE:${dateValue(addDays(today, 1))}`,
-    `SUMMARY:${escapeText(stale(localDate(new Date(since), meta.timezone)))}`,
+    `SUMMARY:${escapeText(FEED.stale(localDate(new Date(since), meta.timezone)))}`,
     "END:VEVENT"
   ];
 }
@@ -13422,16 +13454,10 @@ var GOOGLE_ICON = icon(
 );
 
 // src/formats/html.ts
-var SECTIONS = {
-  mlsz: "Labdar\xFAg\xE1s \u2013 MLSZ adatbank",
-  "mlsz-futsal": "Futsal \u2013 MLSZ adatbank",
-  mvlsz: "V\xEDzilabda \u2013 MVLSZ adatbank",
-  mrsz: "R\xF6plabda \u2013 MRSZ"
-};
 function sectionOf(feed) {
   const source = feed.source ?? "";
   const futsal = source === "mlsz" && /futsal/.test(feed.category ?? "");
-  return SECTIONS[futsal ? "mlsz-futsal" : source] ?? source;
+  return PAGE.sections[futsal ? "mlsz-futsal" : source] ?? source;
 }
 function competitionsOf(fixtures) {
   const counts = /* @__PURE__ */ new Map();
@@ -13445,14 +13471,6 @@ function textOn(color) {
   const luminance = 0.2126 * lin(r ?? 0) + 0.7152 * lin(g ?? 0) + 0.0722 * lin(b ?? 0);
   return luminance > 0.179 ? "#000" : "#fff";
 }
-var WORDS = {
-  title: "Meccsnapt\xE1rak",
-  intro: "Iratkozz fel egy napt\xE1rra: a meccsek \xE9s a v\xE1ltoz\xE1sok magukt\xF3l friss\xFClnek a napt\xE1radban.",
-  apple: "Feliratkoz\xE1s \u2013 iPhone / Mac",
-  google: "Feliratkoz\xE1s \u2013 Google Napt\xE1r",
-  address: "C\xEDm m\xE1s napt\xE1rhoz:",
-  file: "Napt\xE1rf\xE1jl"
-};
 function escapeHtml(text2) {
   return text2.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
@@ -13470,7 +13488,7 @@ function indexHtml(feeds, options = {}) {
     if (!base) {
       return `    <li>
 ${name}
-      <p><a href="${escapeHtml(f.slug)}.ics">${WORDS.file}</a></p>
+      <p><a href="${escapeHtml(f.slug)}.ics">${PAGE.file}</a></p>
     </li>`;
     }
     const url = `${base}${f.slug}.ics`;
@@ -13480,9 +13498,9 @@ ${name}
     return [
       `    <li${style}>`,
       name,
-      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${WORDS.apple}</span></a>`,
-      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${WORDS.google}</span></a></p>`,
-      `      <p class="address">${WORDS.address} <code>${escapeHtml(url)}</code></p>`,
+      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${PAGE.apple}</span></a>`,
+      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${PAGE.google}</span></a></p>`,
+      `      <p class="address">${PAGE.address} <code>${escapeHtml(url)}</code></p>`,
       "    </li>"
     ].join("\n");
   };
@@ -13503,7 +13521,7 @@ ${list2.map(item).join("\n")}
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${WORDS.title}</title>
+  <title>${PAGE.title}</title>
   <style>
     :root { color-scheme: light dark; --fg: #1d1d1f; --bg: #fff; --muted: #6e6e73; --accent: #0a66c2; --line: #d2d2d7; }
     @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --bg: #1c1c1e; --muted: #a1a1a6; --accent: #4da3ff; --line: #3a3a3c; } }
@@ -13522,8 +13540,8 @@ ${list2.map(item).join("\n")}
   </style>
 </head>
 <body>
-  <h1>${WORDS.title}</h1>
-  <p>${WORDS.intro}</p>
+  <h1>${PAGE.title}</h1>
+  <p>${PAGE.intro}</p>
 ${body}
 </body>
 </html>
@@ -13659,11 +13677,6 @@ var Gist = class {
 };
 
 // src/action.ts
-var MESSAGES = {
-  failing: (error) => `Nem friss\xFCl (${error}); a kor\xE1bbi menetrend marad kint.`,
-  recovered: "\xDAjra friss\xFCl.",
-  test: "Teszt \xE9rtes\xEDt\xE9s: a napt\xE1r \xE9rtes\xEDt\xE9sei ide \xE9rkeznek."
-};
 function input(env, name) {
   return (env[`INPUT_${name.toUpperCase()}`] ?? "").trim();
 }
@@ -13709,7 +13722,7 @@ function summaryTable(results) {
 }
 async function notify(results, topic, fetchFn) {
   for (const r of results) {
-    const message = r.error && !r.wasFailing ? MESSAGES.failing(r.error) : !r.error && r.wasFailing ? MESSAGES.recovered : null;
+    const message = r.error && !r.wasFailing ? NOTIFY.failing(r.error) : !r.error && r.wasFailing ? NOTIFY.recovered : null;
     if (message && !await sendNtfy(topic, r.name, message, fetchFn)) {
       command("warning", "The notification could not be sent.");
     }
@@ -13761,7 +13774,7 @@ async function run(env = process.env, client = new Client(), fetchFn = defaultFe
     if (gist && gistFiles?.get(STATE_FILE) !== stateText) await gist.update({ [STATE_FILE]: stateText });
     if (notifyTopic) await notify(results, notifyTopic, fetchFn);
     if (input(env, "notify_test") === "true") {
-      const sent = notifyTopic && await sendNtfy(notifyTopic, "fixtical", MESSAGES.test, fetchFn);
+      const sent = notifyTopic && await sendNtfy(notifyTopic, "fixtical", NOTIFY.test, fetchFn);
       command(sent ? "notice" : "warning", sent ? "Test notification sent." : "Test notification not sent.");
     }
     for (const r of results) {

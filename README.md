@@ -147,7 +147,9 @@ rebuilt at once. The `annotations` object looks like this:
 }
 ```
 
-The lines and the link go into the description of that day's match. Lines are plain text (at most five,
+The lines go into the description of that day's match. The link is the event's link until kick-off (until
+the end of the day while the kick-off time is not set); from the first build after that, the match's page takes
+its place. The description shows the event's link too, as some calendar apps leave it out. Lines are plain text (at most five,
 200 characters each), the link must be `https`, a day without a match is ignored, and annotations whose
 `updated_at` is more than 24 hours old are skipped. Several producers are merged in name order.
 

@@ -8,14 +8,9 @@ import { isTopic, sendNtfy } from "./notify/ntfy.ts";
 import { writeDirectory } from "./publish/directory.ts";
 import { Gist, GistError } from "./publish/gist.ts";
 import { emptyState, parseState, readState, STATE_FILE, type State } from "./state.ts";
+import { NOTIFY } from "./texts.ts";
 
 type Env = NodeJS.ProcessEnv;
-
-const MESSAGES = {
-  failing: (error: string) => `Nem frissül (${error}); a korábbi menetrend marad kint.`,
-  recovered: "Újra frissül.",
-  test: "Teszt értesítés: a naptár értesítései ide érkeznek.",
-};
 
 function input(env: Env, name: string): string {
   return (env[`INPUT_${name.toUpperCase()}`] ?? "").trim();
@@ -78,11 +73,7 @@ export function summaryTable(results: readonly CalendarResult[]): string {
 async function notify(results: readonly CalendarResult[], topic: string, fetchFn: FetchLike): Promise<void> {
   for (const r of results) {
     const message =
-      r.error && !r.wasFailing
-        ? MESSAGES.failing(r.error)
-        : !r.error && r.wasFailing
-          ? MESSAGES.recovered
-          : null;
+      r.error && !r.wasFailing ? NOTIFY.failing(r.error) : !r.error && r.wasFailing ? NOTIFY.recovered : null;
     if (message && !(await sendNtfy(topic, r.name, message, fetchFn))) {
       command("warning", "The notification could not be sent.");
     }
@@ -147,7 +138,7 @@ export async function run(
     if (gist && gistFiles?.get(STATE_FILE) !== stateText) await gist.update({ [STATE_FILE]: stateText });
     if (notifyTopic) await notify(results, notifyTopic, fetchFn);
     if (input(env, "notify_test") === "true") {
-      const sent = notifyTopic && (await sendNtfy(notifyTopic, "fixtical", MESSAGES.test, fetchFn));
+      const sent = notifyTopic && (await sendNtfy(notifyTopic, "fixtical", NOTIFY.test, fetchFn));
       command(sent ? "notice" : "warning", sent ? "Test notification sent." : "Test notification not sent.");
     }
 
