@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { build } from "../src/build.ts";
+import { build, FETCH_EVERY_MS, fetchDue } from "../src/build.ts";
 import { loadConfig } from "../src/config.ts";
 import { emptyState } from "../src/state.ts";
 import { fakeClient, fixture, UJPEST_ROUTES as ROUTES, type Route } from "./helpers.ts";
@@ -49,6 +49,34 @@ describe("build", () => {
     const { results } = await build(config, emptyState(), client, NOW);
     expect(results.map((r) => r.error)).toEqual([null, null]);
     expect(seen.length).toBe(new Set(seen).size);
+  });
+
+  it("is due to read the sources every six hours", () => {
+    const at = (ms: number) => ({ ...emptyState(), fetchedAt: new Date(NOW.getTime() - ms).toISOString() });
+    expect(fetchDue(emptyState(), NOW)).toBe(true);
+    expect(fetchDue(at(FETCH_EVERY_MS - 1), NOW)).toBe(false);
+    expect(fetchDue(at(FETCH_EVERY_MS), NOW)).toBe(true);
+  });
+
+  it("builds from the last fixtures without reading, but reads a calendar never read", async () => {
+    const failing = await build(CONFIG, emptyState(), fakeClient(ROUTES).client, NOW);
+    const failed = await build(CONFIG, failing.state, fakeClient([[/./, 503]]).client, NOW);
+    const config = loadConfig(`calendars:
+  - club: 14374
+    slug: ujpest
+  - club: 14374
+    slug: new
+`);
+    const { client, seen } = fakeClient(ROUTES);
+    const later = new Date("2026-11-03T09:00:00Z");
+    const { results, state } = await build(config, failed.state, client, later, { fetch: false });
+    expect(results.map((r) => [r.slug, r.fetched, r.error])).toEqual([
+      ["ujpest", false, null],
+      ["new", true, null],
+    ]);
+    expect(seen.length).toBeGreaterThan(0);
+    expect(state.calendars.ujpest).toEqual(failed.state.calendars.ujpest);
+    expect(state.fetchedAt).toBe(failed.state.fetchedAt);
   });
 
   it("treats an empty schedule as a failure", async () => {

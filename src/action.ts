@@ -1,11 +1,11 @@
 import { appendFile } from "node:fs/promises";
 import { collectNotes } from "./annotations.ts";
-import { build, type CalendarResult } from "./build.ts";
+import { build, type CalendarResult, fetchDue } from "./build.ts";
 import { type Config, ConfigError, readConfig } from "./config.ts";
 import { Geocoder } from "./geocode.ts";
 import { Client, defaultFetch, type FetchLike } from "./http.ts";
 import { isTopic, sendNtfy } from "./notify/ntfy.ts";
-import { writeDirectory } from "./publish/directory.ts";
+import { contentDigest, writeDirectory } from "./publish/directory.ts";
 import { Gist, GistError } from "./publish/gist.ts";
 import { emptyState, parseState, readState, STATE_FILE, type State } from "./state.ts";
 import { NOTIFY } from "./texts.ts";
@@ -64,7 +64,13 @@ async function previousState(
 /** The job summary's table of the builds; a status keeps its pipes and backslashes. */
 export function summaryTable(results: readonly CalendarResult[]): string {
   const rows = results.map((r) => {
-    const status = !r.error ? "updated" : r.ics ? `not updated: ${r.error}` : `failed: ${r.error}`;
+    const status = !r.fetched
+      ? "not read this time"
+      : !r.error
+        ? "updated"
+        : r.ics
+          ? `not updated: ${r.error}`
+          : `failed: ${r.error}`;
     return `| ${r.slug} | ${r.fixtures.length} | ${status.replace(/[\\|]/g, "\\$&")} |`;
   });
   return ["| Calendar | Fixtures | Status |", "|---|---|---|", ...rows].join("\n");
@@ -72,6 +78,7 @@ export function summaryTable(results: readonly CalendarResult[]): string {
 
 async function notify(results: readonly CalendarResult[], topic: string, fetchFn: FetchLike): Promise<void> {
   for (const r of results) {
+    if (!r.fetched) continue;
     const message =
       r.error && !r.wasFailing ? NOTIFY.failing(r.error) : !r.error && r.wasFailing ? NOTIFY.recovered : null;
     if (message && !(await sendNtfy(topic, r.name, message, fetchFn))) {
@@ -125,13 +132,19 @@ export async function run(
     const now = new Date();
     const { annotations, notes, problems } = collectNotes(state.notes ?? {}, input(env, "dispatch"), now);
     for (const problem of problems) command("warning", problem, "annotations");
-    const geocoder = new Geocoder({ googleKey, fetch: fetchFn });
+    // The sources are read every few hours, or when asked; in between the calendars are
+    // built from the fixtures read last, with the current annotations and links.
+    const fetch = input(env, "fetch") === "always" || fetchDue(state, now);
     const { results, state: next } = await build(config, state, client, now, {
       annotations,
-      geocoder,
+      geocoder: fetch ? new Geocoder({ googleKey, fetch: fetchFn }) : null,
       keys: { mvlsz: mvlszKey },
+      fetch,
     });
     if (Object.keys(notes).length) next.notes = notes;
+    next.digest = contentDigest(results);
+    // Reading the sources changes the state, which is published too.
+    const changed = fetch || next.digest !== state.digest;
     await writeDirectory(out, results, next, { siteUrl: input(env, "site_url") });
     // The gist keeps the state with the annotations, which the published one leaves out.
     const stateText = `${JSON.stringify(next)}\n`;
@@ -147,6 +160,7 @@ export async function run(
     }
     await addSummary(env, summaryTable(results));
     await setOutput(env, "configured", "true");
+    await setOutput(env, "changed", String(changed));
     return results.some((r) => !r.ics) ? 1 : 0;
   } catch (e) {
     if (!(e instanceof GistError || e instanceof StateError)) throw e;

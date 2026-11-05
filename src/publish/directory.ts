@@ -1,8 +1,23 @@
+import { createHash } from "node:crypto";
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { CalendarResult } from "../build.ts";
 import { competitionsOf, indexHtml, type PageOptions } from "../formats/html.ts";
 import { STATE_FILE, type State } from "../state.ts";
+
+/**
+ * The calendars' published content without their generation times: equal
+ * digests mean nothing a subscriber sees has changed.
+ */
+export function contentDigest(results: readonly CalendarResult[]): string {
+  const hash = createHash("sha256");
+  for (const r of results) {
+    if (!r.ics || !r.json) continue;
+    hash.update(`${r.slug}\n${r.ics.replace(/^DTSTAMP:.*\r\n/gm, "")}\n`);
+    hash.update(`${JSON.stringify({ ...r.json, generated_at: null })}\n`);
+  }
+  return hash.digest("hex");
+}
 
 async function writeAtomic(path: string, content: string): Promise<void> {
   const tmp = `${path}.tmp`;

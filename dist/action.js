@@ -13195,6 +13195,10 @@ var SOURCES = /* @__PURE__ */ new Map([
 
 // src/build.ts
 var STALE_AFTER_MS = 2 * 86400 * 1e3;
+var FETCH_EVERY_MS = (6 * 60 - 15) * 60 * 1e3;
+function fetchDue(state, now) {
+  return !state.fetchedAt || now.getTime() - Date.parse(state.fetchedAt) >= FETCH_EVERY_MS;
+}
 async function fetchCalendar(cal, previous, ctx) {
   const source = SOURCES.get(cal.source);
   if (!source) throw new SourceError(`unknown source "${cal.source}"`);
@@ -13224,19 +13228,23 @@ async function refresh(cal, previous, ctx, now) {
 }
 async function build(config, state, client, now, options = {}) {
   const ctx = { client, pages: /* @__PURE__ */ new Map(), keys: options.keys };
+  const fetch3 = options.fetch ?? true;
   const refreshed = [];
   for (const cal of config.calendars) {
     const previous = state.calendars[cal.slug];
-    refreshed.push({ cal, previous, ...await refresh(cal, previous, ctx, now) });
+    const read = fetch3 || !previous;
+    const update = read ? await refresh(cal, previous, ctx, now) : { entry: previous, error: null };
+    refreshed.push({ cal, previous, fetched: read, ...update });
   }
   const stadiums = /* @__PURE__ */ new Map();
   for (const { entry } of refreshed)
     for (const f of entry.fixtures) if (f.venue) stadiums.set(f.venue, f.home);
   const placeCache = options.geocoder ? await options.geocoder.lookup([...stadiums], state.places, now) : state.places;
   const places = foundPlaces(placeCache);
-  const next = { schema: 1, calendars: {}, places: placeCache };
+  const fetchedAt = fetch3 ? now.toISOString() : state.fetchedAt;
+  const next = { schema: 1, calendars: {}, places: placeCache, ...fetchedAt ? { fetchedAt } : {} };
   const results = [];
-  for (const { cal, previous, entry, error } of refreshed) {
+  for (const { cal, previous, fetched, entry, error } of refreshed) {
     next.calendars[cal.slug] = entry;
     const team = ownTeam(entry.fixtures);
     const name = team ? teamName(team) : cal.slug;
@@ -13257,6 +13265,7 @@ async function build(config, state, client, now, options = {}) {
       category: cal.category,
       error,
       wasFailing: !!previous?.failingSince,
+      fetched,
       fixtures: entry.fixtures,
       updatedAt: entry.updatedAt,
       ics: has ? buildIcs(meta, entry.fixtures, now, extras) : null,
@@ -13437,6 +13446,7 @@ async function sendNtfy(topic, title, message, fetchFn = defaultFetch) {
 }
 
 // src/publish/directory.ts
+import { createHash } from "node:crypto";
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { join as join2 } from "node:path";
 
@@ -13574,7 +13584,14 @@ function parseState(text2) {
     if (typeof data.notes === "object" && data.notes !== null) {
       for (const [name, text3] of Object.entries(data.notes)) if (typeof text3 === "string") notes[name] = text3;
     }
-    return { schema: 1, calendars, places, ...Object.keys(notes).length ? { notes } : {} };
+    return {
+      schema: 1,
+      calendars,
+      places,
+      ...Object.keys(notes).length ? { notes } : {},
+      ...typeof data.fetchedAt === "string" ? { fetchedAt: data.fetchedAt } : {},
+      ...typeof data.digest === "string" ? { digest: data.digest } : {}
+    };
   } catch {
     return emptyState();
   }
@@ -13588,6 +13605,18 @@ async function readState(dir) {
 }
 
 // src/publish/directory.ts
+function contentDigest(results) {
+  const hash = createHash("sha256");
+  for (const r of results) {
+    if (!r.ics || !r.json) continue;
+    hash.update(`${r.slug}
+${r.ics.replace(/^DTSTAMP:.*\r\n/gm, "")}
+`);
+    hash.update(`${JSON.stringify({ ...r.json, generated_at: null })}
+`);
+  }
+  return hash.digest("hex");
+}
 async function writeAtomic(path, content) {
   const tmp = `${path}.tmp`;
   await writeFile(tmp, content, "utf8");
@@ -13715,13 +13744,14 @@ async function previousState(gistFiles, stateUrl, out, fetchFn) {
 }
 function summaryTable(results) {
   const rows = results.map((r) => {
-    const status = !r.error ? "updated" : r.ics ? `not updated: ${r.error}` : `failed: ${r.error}`;
+    const status = !r.fetched ? "not read this time" : !r.error ? "updated" : r.ics ? `not updated: ${r.error}` : `failed: ${r.error}`;
     return `| ${r.slug} | ${r.fixtures.length} | ${status.replace(/[\\|]/g, "\\$&")} |`;
   });
   return ["| Calendar | Fixtures | Status |", "|---|---|---|", ...rows].join("\n");
 }
 async function notify(results, topic, fetchFn) {
   for (const r of results) {
+    if (!r.fetched) continue;
     const message = r.error && !r.wasFailing ? NOTIFY.failing(r.error) : !r.error && r.wasFailing ? NOTIFY.recovered : null;
     if (message && !await sendNtfy(topic, r.name, message, fetchFn)) {
       command("warning", "The notification could not be sent.");
@@ -13761,13 +13791,16 @@ async function run(env = process.env, client = new Client(), fetchFn = defaultFe
     const now = /* @__PURE__ */ new Date();
     const { annotations, notes, problems } = collectNotes(state.notes ?? {}, input(env, "dispatch"), now);
     for (const problem of problems) command("warning", problem, "annotations");
-    const geocoder = new Geocoder({ googleKey, fetch: fetchFn });
+    const fetch3 = input(env, "fetch") === "always" || fetchDue(state, now);
     const { results, state: next } = await build(config, state, client, now, {
       annotations,
-      geocoder,
-      keys: { mvlsz: mvlszKey }
+      geocoder: fetch3 ? new Geocoder({ googleKey, fetch: fetchFn }) : null,
+      keys: { mvlsz: mvlszKey },
+      fetch: fetch3
     });
     if (Object.keys(notes).length) next.notes = notes;
+    next.digest = contentDigest(results);
+    const changed = fetch3 || next.digest !== state.digest;
     await writeDirectory(out, results, next, { siteUrl: input(env, "site_url") });
     const stateText = `${JSON.stringify(next)}
 `;
@@ -13782,6 +13815,7 @@ async function run(env = process.env, client = new Client(), fetchFn = defaultFe
     }
     await addSummary(env, summaryTable(results));
     await setOutput(env, "configured", "true");
+    await setOutput(env, "changed", String(changed));
     return results.some((r) => !r.ics) ? 1 : 0;
   } catch (e) {
     if (!(e instanceof GistError || e instanceof StateError)) throw e;

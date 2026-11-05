@@ -1,18 +1,20 @@
 name: calendars
 
-# Builds the calendars of fixtical.yml.
+# Builds the calendars of fixtical.yml every hour: the sources are read every
+# six hours (and on a push or a run by hand), in between the calendars are
+# built from the matches read last, so links that change at kick-off follow.
 # Also on a repository_dispatch of type "annotations": a tool sends its
 # annotations with it.
 # With the FIXTICAL_GIST_TOKEN and FIXTICAL_GIST_ID secrets the state, with
-# the annotations, is kept in that gist. Every feed is uploaded as a Pages
-# artifact and, when the FIXTICAL_PAGES variable is "true" (and Pages uses
-# GitHub Actions as its source), deployed to GitHub Pages. Without a
-# configuration nothing runs.
+# the annotations, is kept in that gist. When the output changed, it is
+# uploaded as a Pages artifact and, when the FIXTICAL_PAGES variable is "true"
+# (and Pages uses GitHub Actions as its source), deployed to GitHub Pages.
+# Without a configuration nothing runs.
 # The secrets may be the production environment's, limited to the default
 # branch; repository secrets work as well.
 on:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 * * * *"
     # Monthly: keeps the schedule from being paused after 60 days without commits.
     - cron: "41 3 1 * *"
   workflow_dispatch:
@@ -47,6 +49,7 @@ jobs:
       deployment: false
     outputs:
       configured: ${{ steps.feeds.outputs.configured }}
+      changed: ${{ steps.feeds.outputs.changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -55,6 +58,7 @@ jobs:
         uses: ./
         with:
           out: public
+          fetch: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'always' || '' }}
           notify_test: ${{ inputs.notify_test == true }}
           dispatch: ${{ github.event_name == 'repository_dispatch' && toJSON(github.event.client_payload) || '' }}
           site_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
@@ -65,14 +69,14 @@ jobs:
           FIXTICAL_NTFY_TOPIC: ${{ secrets.FIXTICAL_NTFY_TOPIC }}
           FIXTICAL_GOOGLE_MAPS_KEY: ${{ secrets.FIXTICAL_GOOGLE_MAPS_KEY }}
           FIXTICAL_MVLSZ_KEY: ${{ secrets.FIXTICAL_MVLSZ_KEY }}
-      - if: steps.feeds.outputs.configured == 'true'
+      - if: steps.feeds.outputs.changed == 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: public
 
   pages:
     needs: build
-    if: needs.build.outputs.configured == 'true' && vars.FIXTICAL_PAGES == 'true'
+    if: needs.build.outputs.changed == 'true' && vars.FIXTICAL_PAGES == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

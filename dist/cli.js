@@ -13093,6 +13093,7 @@ var SOURCES = /* @__PURE__ */ new Map([
 
 // src/build.ts
 var STALE_AFTER_MS = 2 * 86400 * 1e3;
+var FETCH_EVERY_MS = (6 * 60 - 15) * 60 * 1e3;
 async function fetchCalendar(cal, previous, ctx) {
   const source = SOURCES.get(cal.source);
   if (!source) throw new SourceError(`unknown source "${cal.source}"`);
@@ -13122,19 +13123,23 @@ async function refresh(cal, previous, ctx, now) {
 }
 async function build(config, state, client, now, options = {}) {
   const ctx = { client, pages: /* @__PURE__ */ new Map(), keys: options.keys };
+  const fetch3 = options.fetch ?? true;
   const refreshed = [];
   for (const cal of config.calendars) {
     const previous = state.calendars[cal.slug];
-    refreshed.push({ cal, previous, ...await refresh(cal, previous, ctx, now) });
+    const read = fetch3 || !previous;
+    const update = read ? await refresh(cal, previous, ctx, now) : { entry: previous, error: null };
+    refreshed.push({ cal, previous, fetched: read, ...update });
   }
   const stadiums = /* @__PURE__ */ new Map();
   for (const { entry } of refreshed)
     for (const f of entry.fixtures) if (f.venue) stadiums.set(f.venue, f.home);
   const placeCache = options.geocoder ? await options.geocoder.lookup([...stadiums], state.places, now) : state.places;
   const places = foundPlaces(placeCache);
-  const next = { schema: 1, calendars: {}, places: placeCache };
+  const fetchedAt = fetch3 ? now.toISOString() : state.fetchedAt;
+  const next = { schema: 1, calendars: {}, places: placeCache, ...fetchedAt ? { fetchedAt } : {} };
   const results = [];
-  for (const { cal, previous, entry, error } of refreshed) {
+  for (const { cal, previous, fetched, entry, error } of refreshed) {
     next.calendars[cal.slug] = entry;
     const team = ownTeam(entry.fixtures);
     const name = team ? teamName(team) : cal.slug;
@@ -13155,6 +13160,7 @@ async function build(config, state, client, now, options = {}) {
       category: cal.category,
       error,
       wasFailing: !!previous?.failingSince,
+      fetched,
       fixtures: entry.fixtures,
       updatedAt: entry.updatedAt,
       ics: has ? buildIcs(meta, entry.fixtures, now, extras) : null,
@@ -13448,7 +13454,14 @@ function parseState(text2) {
     if (typeof data.notes === "object" && data.notes !== null) {
       for (const [name, text3] of Object.entries(data.notes)) if (typeof text3 === "string") notes[name] = text3;
     }
-    return { schema: 1, calendars, places, ...Object.keys(notes).length ? { notes } : {} };
+    return {
+      schema: 1,
+      calendars,
+      places,
+      ...Object.keys(notes).length ? { notes } : {},
+      ...typeof data.fetchedAt === "string" ? { fetchedAt: data.fetchedAt } : {},
+      ...typeof data.digest === "string" ? { digest: data.digest } : {}
+    };
   } catch {
     return emptyState();
   }

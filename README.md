@@ -10,9 +10,9 @@
 
 Match calendars (iCalendar feeds) for Hungarian football, water polo and volleyball teams.
 
-A GitHub Actions workflow builds them every six hours: league and cup matches with kick-off times,
-venues and results. Any team can be followed, from the top flight to county leagues, men's and women's,
-futsal and youth teams.
+A GitHub Actions workflow reads the data banks every six hours and refreshes the calendars every hour:
+league and cup matches with kick-off times, venues and results. Any team can be followed, from the top
+flight to county leagues, men's and women's, futsal and youth teams.
 
 ## Ready-made calendars
 
@@ -36,7 +36,8 @@ Your own calendars, built by GitHub Actions and published on GitHub Pages:
    open your team's page in the MLSZ data bank, copy its address, and put it in as `team_url`.
 4. **Settings → Pages**: set _Source_ to _GitHub Actions_. Then **Settings → Secrets and variables →
    Actions → Variables**: add `FIXTICAL_PAGES` with the value `true`.
-5. In **Actions**, run the **calendars** workflow once by hand. From then on it runs every six hours.
+5. In **Actions**, run the **calendars** workflow once by hand. From then on it runs every hour, reading the
+   data banks every six hours; GitHub Pages is updated only when a calendar changed.
 
 Your calendar is at `https://<your-user>.github.io/fixtical/<slug>.ics`. The page
 `https://<your-user>.github.io/fixtical/` lists every calendar of your fork.
@@ -148,10 +149,11 @@ rebuilt at once. The `annotations` object looks like this:
 ```
 
 The lines go into the description of that day's match. The link is the event's link until kick-off (until
-the end of the day while the kick-off time is not set); from the first build after that, the match's page takes
-its place. The description shows the event's link too, as some calendar apps leave it out. Lines are plain text (at most five,
-200 characters each), the link must be `https`, a day without a match is ignored, and annotations whose
-`updated_at` is more than 24 hours old are skipped. Several producers are merged in name order.
+the end of the day while the kick-off time is not set); about an hour after that, the match's page takes its
+place. The description shows the event's link too, as some calendar apps leave it out. Lines are plain text
+(at most five, 200 characters each), the link must be `https`, a day without a match is ignored, and
+annotations whose `updated_at` is more than 24 hours old are skipped. Several producers are merged in name
+order.
 
 The annotations last until the next build, unless the state is kept privately: with the repository secrets
 `FIXTICAL_GIST_ID` (a secret gist's id) and `FIXTICAL_GIST_TOKEN` (a token allowed to write gists), the state

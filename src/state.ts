@@ -23,6 +23,10 @@ export interface State {
   places: PlaceCache;
   /** Annotation files producers sent with a repository dispatch, by producer. */
   notes?: Record<string, string>;
+  /** When the sources were last read (or tried). */
+  fetchedAt?: string;
+  /** The published calendars' content, without generation times: see contentDigest(). */
+  digest?: string;
 }
 
 export function emptyState(): State {
@@ -58,7 +62,14 @@ export function parseState(text: string | null): State {
     if (typeof data.notes === "object" && data.notes !== null) {
       for (const [name, text] of Object.entries(data.notes)) if (typeof text === "string") notes[name] = text;
     }
-    return { schema: 1, calendars, places, ...(Object.keys(notes).length ? { notes } : {}) };
+    return {
+      schema: 1,
+      calendars,
+      places,
+      ...(Object.keys(notes).length ? { notes } : {}),
+      ...(typeof data.fetchedAt === "string" ? { fetchedAt: data.fetchedAt } : {}),
+      ...(typeof data.digest === "string" ? { digest: data.digest } : {}),
+    };
   } catch {
     return emptyState();
   }

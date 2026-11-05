@@ -27,4 +27,15 @@ describe("state", () => {
     expect(parseState(text).notes).toEqual({ a: "{}" });
     expect(parseState(JSON.stringify({ schema: 1, calendars: {} }))).not.toHaveProperty("notes");
   });
+
+  it("keeps when the sources were read and the digest of what was published", () => {
+    const text = JSON.stringify({
+      schema: 1,
+      calendars: {},
+      fetchedAt: "2026-11-05T06:17:00Z",
+      digest: "ab",
+    });
+    expect(parseState(text)).toMatchObject({ fetchedAt: "2026-11-05T06:17:00Z", digest: "ab" });
+    expect(parseState(JSON.stringify({ schema: 1, calendars: {}, digest: 1 }))).not.toHaveProperty("digest");
+  });
 });

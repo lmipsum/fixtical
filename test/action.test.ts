@@ -38,6 +38,8 @@ async function env(
   return {
     INPUT_CONFIG: configPath,
     INPUT_OUT: join(dir, "public"),
+    // Every build reads the sources, unless a test leaves it to their age.
+    INPUT_FETCH: "always",
     GITHUB_OUTPUT: join(dir, "output"),
     GITHUB_STEP_SUMMARY: join(dir, "summary"),
     ...extra,
@@ -93,7 +95,7 @@ describe("action", () => {
     const e = await env();
     expect(await run(e, fakeClient(UJPEST_ROUTES).client, services().fetchFn)).toBe(0);
     expect(await readFile(join(e.INPUT_OUT, "ujpest.ics"), "utf8")).toContain("BEGIN:VEVENT");
-    expect(await readFile(e.GITHUB_OUTPUT, "utf8")).toBe("configured=true\n");
+    expect(await readFile(e.GITHUB_OUTPUT, "utf8")).toBe("configured=true\nchanged=true\n");
     expect(await readFile(e.GITHUB_STEP_SUMMARY, "utf8")).toContain("| ujpest | 4 | updated |");
   });
 
@@ -138,7 +140,8 @@ describe("action", () => {
     expect([...s.gist.keys()]).toEqual(["state.json"]);
     expect(patches()).toBe(1);
 
-    expect(await run(e, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
+    // Nothing read, nothing changed: the gist is left alone.
+    expect(await run({ ...e, INPUT_FETCH: "" }, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
     expect(patches()).toBe(1);
 
     // The source fails: one notification (which ntfy refuses here), the feed stays.
@@ -202,6 +205,37 @@ describe("action", () => {
     expect(kept).toContain("Sent with the dispatch");
   });
 
+  it("reads the sources when due, else builds from the last matches and tells what changed", async () => {
+    const s = services();
+    const gist = { FIXTICAL_GIST_TOKEN: TOKEN, FIXTICAL_GIST_ID: GIST };
+    expect(
+      await run(await env({ ...gist, INPUT_FETCH: "" }), fakeClient(UJPEST_ROUTES).client, s.fetchFn),
+    ).toBe(0);
+    expect(await readFile(join(dir, "output"), "utf8")).toMatch(/changed=true\n$/);
+
+    // Within six hours: nothing is read, nothing changed.
+    const quiet = fakeClient([[/./, 503]]);
+    expect(await run(await env({ ...gist, INPUT_FETCH: "" }), quiet.client, s.fetchFn)).toBe(0);
+    expect(quiet.seen).toEqual([]);
+    expect(await readFile(join(dir, "output"), "utf8")).toMatch(/changed=false\n$/);
+    expect(await readFile(join(dir, "summary"), "utf8")).toMatch(
+      /\| ujpest \| 4 \| not read this time \|\n$/,
+    );
+
+    // An annotation arrives: still nothing read, but the calendar changed.
+    const payload = JSON.stringify({
+      producer: "ticket-watch",
+      annotations: {
+        updated_at: new Date().toISOString(),
+        calendars: { ujpest: { "2026-08-02": { lines: ["New line"] } } },
+      },
+    });
+    const sent = await env({ ...gist, INPUT_FETCH: "", INPUT_DISPATCH: payload });
+    expect(await run(sent, quiet.client, s.fetchFn)).toBe(0);
+    expect(quiet.seen).toEqual([]);
+    expect(await readFile(join(dir, "output"), "utf8")).toMatch(/changed=true\n$/);
+  });
+
   it("warns about a dispatch it cannot read", async () => {
     const s = services();
     const e = await env({ INPUT_DISPATCH: JSON.stringify({ producer: "Bad Name", annotations: {} }) });
@@ -252,7 +286,13 @@ describe("action", () => {
 
 describe("summaryTable", () => {
   it("escapes pipes and backslashes in a status", () => {
-    const failed = { slug: "ujpest", fixtures: [], error: "a\\|b", ics: null } as unknown as CalendarResult;
+    const failed = {
+      slug: "ujpest",
+      fixtures: [],
+      error: "a\\|b",
+      ics: null,
+      fetched: true,
+    } as unknown as CalendarResult;
     expect(summaryTable([failed])).toContain("| ujpest | 0 | failed: a\\\\\\|b |");
   });
 });

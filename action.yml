@@ -15,6 +15,9 @@ inputs:
   dispatch:
     description: 'The client_payload of a repository dispatch, as JSON: {"producer": ..., "annotations": {...}} adds lines to match days.'
     default: ""
+  fetch:
+    description: '"always" reads the sources now; else they are read when six hours have passed since the last time, and in between the calendars are built from the matches read last.'
+    default: ""
   notify_test:
     description: '"true" sends a test notification to the ntfy topic.'
     default: "false"
@@ -28,6 +31,8 @@ inputs:
 outputs:
   configured:
     description: '"false" when there is nothing to build.'
+  changed:
+    description: '"true" when the output differs from the previous build in more than its generation time.'
 
 runs:
   using: node24
