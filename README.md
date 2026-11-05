@@ -57,18 +57,18 @@ calendars:
     category: women
 ```
 
-| Setting                   | Default         | Meaning                                                                                |
-| ------------------------- | --------------- | -------------------------------------------------------------------------------------- |
-| `calendars[].source`      | `mlsz`          | `mlsz` football, `mvlsz` water polo (needs the `FIXTICAL_MVLSZ_KEY` secret), `mrsz` volleyball. |
-| `calendars[].slug`        | from the team   | File name of the calendar: `<slug>.ics`. Lowercase letters, digits and dashes.         |
-| `calendars[].color`       | none            | Calendar colour, `#rrggbb`.                                                            |
-| `calendars[].team_url`    |                 | Address of the team's page (football).                                                 |
-| `calendars[].club`        |                 | The club's number in the data bank (football, water polo).                             |
-| `calendars[].team`        |                 | The team's name as the source writes it (volleyball).                                  |
-| `calendars[].federation`  | `0`             | `0` for national competitions, `1`–`20` for a county's own (football).                 |
+| Setting                   | Default         | Meaning                                                                                           |
+| ------------------------- | --------------- | ------------------------------------------------------------------------------------------------- |
+| `calendars[].source`      | `mlsz`          | `mlsz` football, `mvlsz` water polo (needs the `FIXTICAL_MVLSZ_KEY` secret), `mrsz` volleyball.   |
+| `calendars[].slug`        | from the team   | File name of the calendar: `<slug>.ics`. Lowercase letters, digits and dashes.                    |
+| `calendars[].color`       | none            | Calendar colour, `#rrggbb`.                                                                       |
+| `calendars[].team_url`    |                 | Address of the team's page (football).                                                            |
+| `calendars[].club`        |                 | The club's number in the data bank (football, water polo).                                        |
+| `calendars[].team`        |                 | The team's name as the source writes it (volleyball).                                             |
+| `calendars[].federation`  | `0`             | `0` for national competitions, `1`–`20` for a county's own (football).                            |
 | `calendars[].category`    | `men`           | `men`, `women`, `futsal`, `women-futsal` or `youth`; water polo and volleyball: `men` or `women`. |
-| `calendars[].competition` |                 | A regular expression narrowing the competitions, e.g. `U19`.                           |
-| `calendars[].include`     | `[league, cup]` | Leave out the cups, or the league.                                                     |
+| `calendars[].competition` |                 | A regular expression narrowing the competitions, e.g. `U19`.                                      |
+| `calendars[].include`     | `[league, cup]` | Leave out the cups, or the league.                                                                |
 
 Times are in `Europe/Budapest`, the event texts in Hungarian.
 
