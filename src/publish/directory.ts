@@ -12,7 +12,7 @@ async function writeAtomic(path: string, content: string): Promise<void> {
 
 /**
  * Writes the feeds, their JSON, an index page and the state into `dir`, which is
- * published: the annotations stay in the calendars only, out of the JSON and the state.
+ * published: the annotations stay in the calendars only, out of the state.
  */
 export async function writeDirectory(
   dir: string,
@@ -25,8 +25,7 @@ export async function writeDirectory(
   for (const r of results) {
     if (!r.ics || !r.json) continue;
     await writeAtomic(join(dir, `${r.slug}.ics`), r.ics);
-    const json = { ...r.json, fixtures: r.json.fixtures.map((f) => ({ ...f, annotation: null })) };
-    await writeAtomic(join(dir, `${r.slug}.json`), `${JSON.stringify(json, null, 2)}\n`);
+    await writeAtomic(join(dir, `${r.slug}.json`), `${JSON.stringify(r.json, null, 2)}\n`);
     written.push(`${r.slug}.ics`, `${r.slug}.json`);
   }
   await writeAtomic(

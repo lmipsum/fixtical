@@ -21,7 +21,6 @@ describe("http client", () => {
     await client.text("https://a.example/2", "two");
     await client.text("https://b.example/1", "three");
     expect(waits).toEqual([2000]);
-    expect(client.requests).toBe(3);
   });
 
   it("posts a form like the site's own page", async () => {
@@ -40,16 +39,14 @@ describe("http client", () => {
     expect(headers["User-Agent"]).toMatch(/^Mozilla\/5\.0/);
   });
 
-  it("classifies failures without naming the URL", async () => {
+  it("fails without naming the URL", async () => {
     const failing = (status: number) =>
       new Client({ minGapMs: 0, fetch: async () => new Response("", { status }) }).text(
         "https://a.example/secret-path",
         "team page",
       );
-    await expect(failing(429)).rejects.toMatchObject({ kind: "blocked", message: "team page: HTTP 429" });
-    await expect(failing(403)).rejects.toMatchObject({ kind: "blocked" });
-    await expect(failing(502)).rejects.toMatchObject({ kind: "server" });
-    await expect(failing(404)).rejects.toMatchObject({ kind: "bad_response" });
+    await expect(failing(429)).rejects.toBeInstanceOf(SourceError);
+    await expect(failing(429)).rejects.toThrow(/^team page: HTTP 429$/);
     const network = new Client({
       fetch: async () => {
         throw new TypeError("fetch failed: https://a.example/secret-path");

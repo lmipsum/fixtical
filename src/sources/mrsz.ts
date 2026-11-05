@@ -52,7 +52,7 @@ export function parseSeasons(html: string): { season: string; competitions: Comp
       return { season: label, competitions: competitions.filter((c) => Number.isInteger(c.id) && c.name) };
     })
     .filter((s) => /^\d{4}\/\d{4}$/.test(s.season) && s.competitions.length);
-  if (!seasons.length) throw new SourceError("bad_response", "season list: not found");
+  if (!seasons.length) throw new SourceError("season list: not found");
   return seasons.reduce((newest, s) => (s.season > newest.season ? s : newest));
 }
 
@@ -132,11 +132,11 @@ export const mrsz: Source = {
     const picked = pickCompetitions(competitions, cal);
     if (picked.length) return { key: settingsKey(cal), season, team: cal.team ?? "", competitions: picked };
     if (isMrszResolved(cached) && cached.key === settingsKey(cal)) return cached;
-    throw new SourceError("bad_response", `season ${season}: no ${cal.category} competition fits`);
+    throw new SourceError(`season ${season}: no ${cal.category} competition fits`);
   },
 
   async fixtures(resolved, ctx) {
-    if (!isMrszResolved(resolved)) throw new SourceError("bad_response", "competitions not resolved");
+    if (!isMrszResolved(resolved)) throw new SourceError("competitions not resolved");
     const fixtures: Fixture[] = [];
     for (const competition of resolved.competitions) {
       const html = await page(ctx, `${SITE}/CompetitionMatches.aspx?ID=${competition.id}`, "match list");

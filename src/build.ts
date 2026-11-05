@@ -45,13 +45,13 @@ async function fetchCalendar(
   keys: BuildOptions["keys"],
 ): Promise<{ resolved: CalendarState["resolved"]; fixtures: Fixture[] }> {
   const source = SOURCES.get(cal.source);
-  if (!source) throw new SourceError("bad_response", `unknown source "${cal.source}"`);
+  if (!source) throw new SourceError(`unknown source "${cal.source}"`);
   const problems = source.validate(cal);
-  if (problems.length) throw new SourceError("bad_response", problems.join("; "));
+  if (problems.length) throw new SourceError(problems.join("; "));
   const ctx = { client, pages: new Map<string, string>(), keys };
   const resolved = await source.resolve(cal, previous?.resolved ?? null, ctx);
   const fixtures = await source.fixtures(resolved, ctx);
-  if (!fixtures.length) throw new SourceError("bad_response", "no fixtures found");
+  if (!fixtures.length) throw new SourceError("no fixtures found");
   return { resolved, fixtures };
 }
 
@@ -132,7 +132,7 @@ export async function build(
       fixtures: entry.fixtures,
       updatedAt: entry.updatedAt,
       ics: has ? buildIcs(meta, entry.fixtures, now, extras) : null,
-      json: has ? buildJson(cal.slug, name, TIMEZONE, team, entry.fixtures, now, extras) : null,
+      json: has ? buildJson(cal.slug, name, TIMEZONE, team, entry.fixtures, now, places) : null,
     });
   }
   return { results, state: next };

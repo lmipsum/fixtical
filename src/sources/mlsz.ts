@@ -82,7 +82,7 @@ export function teamPageUrl(ref: TeamRef): string {
 export function parseSeasons(html: string): number {
   const options = all(parse(html), "select#evad option");
   const values = options.map((o) => Number(attr(o, "value"))).filter(Number.isInteger);
-  if (!values.length) throw new SourceError("bad_response", "season list: not found");
+  if (!values.length) throw new SourceError("season list: not found");
   const selected = options.find((o) => hasAttrib(o, "selected"));
   const chosen = selected ? Number(attr(selected, "value")) : Number.NaN;
   return Number.isInteger(chosen) ? chosen : Math.max(...values);
@@ -94,10 +94,10 @@ export function parseLeagues(body: string): { id: number; name: string }[] {
   try {
     data = JSON.parse(body);
   } catch {
-    throw new SourceError("bad_response", "competition list: not JSON");
+    throw new SourceError("competition list: not JSON");
   }
   const leagues = (data as { leagues?: unknown })?.leagues;
-  if (!Array.isArray(leagues)) throw new SourceError("bad_response", "competition list: missing");
+  if (!Array.isArray(leagues)) throw new SourceError("competition list: missing");
   return leagues
     .filter((l) => l && /^\d+$/.test(String(l.id)) && typeof l.name === "string")
     .map((l) => ({ id: Number(l.id), name: String(l.name).trim() }));
@@ -142,7 +142,7 @@ export function clubOf(html: string, team: number): number | null {
 /** Every team of the club this season, from a team page's club selector. */
 export function parseClubTeams(html: string): TeamEntry[] {
   const select = one(parse(html), "select#ClubSelector");
-  if (!select) throw new SourceError("bad_response", "team page: club selector not found");
+  if (!select) throw new SourceError("team page: club selector not found");
   const teams: TeamEntry[] = [];
   for (const option of all(select, "option")) {
     const params = new URLSearchParams(attr(option, "value") ?? "");
@@ -188,7 +188,7 @@ export function parseSchedule(html: string, competition: string): Fixture[] {
     });
   }
   if (blocks.length && !fixtures.length) {
-    throw new SourceError("bad_response", "team page: schedule rows without teams or dates");
+    throw new SourceError("team page: schedule rows without teams or dates");
   }
   return fixtures;
 }
@@ -246,7 +246,6 @@ async function scan(
     if (ref) return ref;
   }
   throw new SourceError(
-    "bad_response",
     `club ${club} not found in the first ${category} competitions of federation ${federation} (set federation or competition)`,
   );
 }
@@ -278,7 +277,7 @@ export const mlsz: Source = {
       if (own) category = categoryOf(own.competition);
       federation = given.federation;
     }
-    if (club === null) throw new SourceError("bad_response", "team page: club not found");
+    if (club === null) throw new SourceError("team page: club not found");
     if (!start) {
       start = await scan(
         ctx,
@@ -306,7 +305,7 @@ export const mlsz: Source = {
   },
 
   async fixtures(resolved, ctx) {
-    if (!isMlszResolved(resolved)) throw new SourceError("bad_response", "no resolved teams");
+    if (!isMlszResolved(resolved)) throw new SourceError("no resolved teams");
     const byId = new Map<string, Fixture>();
     for (const team of resolved.teams) {
       const html = await page(ctx, teamPageUrl(team), "team page");

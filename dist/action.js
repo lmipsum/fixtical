@@ -7665,7 +7665,7 @@ function buildIcs(meta, fixtures, now, extras = {}) {
 
 // src/formats/json.ts
 var JSON_SCHEMA = 1;
-function buildJson(slug, name, timezone, team, fixtures, now, extras = {}) {
+function buildJson(slug, name, timezone, team, fixtures, now, places = /* @__PURE__ */ new Map()) {
   return {
     schema: JSON_SCHEMA,
     slug,
@@ -7673,7 +7673,7 @@ function buildJson(slug, name, timezone, team, fixtures, now, extras = {}) {
     timezone,
     generated_at: now.toISOString(),
     fixtures: fixtures.map((f) => {
-      const place = extras.places?.get(f.venue);
+      const place = places.get(f.venue);
       return {
         source: f.source,
         id: f.id,
@@ -7687,8 +7687,7 @@ function buildJson(slug, name, timezone, team, fixtures, now, extras = {}) {
         location: place ? { address: [place.street, place.town].filter(Boolean).join(", "), lat: place.lat, lon: place.lon } : null,
         competition: f.competition,
         result: f.result,
-        url: f.url,
-        annotation: extras.annotations?.get(f.date) ?? null
+        url: f.url
       };
     })
   };
@@ -7696,11 +7695,9 @@ function buildJson(slug, name, timezone, team, fixtures, now, extras = {}) {
 
 // src/http.ts
 var SourceError = class extends Error {
-  kind;
-  constructor(kind, message) {
+  constructor(message) {
     super(message);
     this.name = "SourceError";
-    this.kind = kind;
   }
 };
 var defaultFetch = (url, init) => fetch(url, init);
@@ -7713,7 +7710,6 @@ var Client = class {
   timeoutMs;
   userAgent;
   last = /* @__PURE__ */ new Map();
-  requests = 0;
   constructor(options = {}) {
     this.fetchFn = options.fetch ?? defaultFetch;
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
@@ -7727,7 +7723,6 @@ var Client = class {
     const host = new URL(url).host;
     const wait = (this.last.get(host) ?? Number.NEGATIVE_INFINITY) + this.minGapMs - this.now();
     if (wait > 0) await this.sleep(wait);
-    this.requests += 1;
     const headers = {
       "User-Agent": this.userAgent,
       "Accept-Language": "hu",
@@ -7744,14 +7739,11 @@ var Client = class {
     try {
       response = await this.fetchFn(url, init);
     } catch (e) {
-      throw new SourceError("network", `${what}: ${e instanceof Error ? e.name : "request failed"}`);
+      throw new SourceError(`${what}: ${e instanceof Error ? e.name : "request failed"}`);
     } finally {
       this.last.set(host, this.now());
     }
-    if (!response.ok) {
-      const kind = response.status === 403 || response.status === 429 ? "blocked" : response.status >= 500 ? "server" : "bad_response";
-      throw new SourceError(kind, `${what}: HTTP ${response.status}`);
-    }
+    if (!response.ok) throw new SourceError(`${what}: HTTP ${response.status}`);
     return await response.text();
   }
 };
@@ -12793,7 +12785,7 @@ function teamPageUrl(ref) {
 function parseSeasons(html) {
   const options = all(parse3(html), "select#evad option");
   const values = options.map((o) => Number(attr(o, "value"))).filter(Number.isInteger);
-  if (!values.length) throw new SourceError("bad_response", "season list: not found");
+  if (!values.length) throw new SourceError("season list: not found");
   const selected = options.find((o) => hasAttrib(o, "selected"));
   const chosen = selected ? Number(attr(selected, "value")) : Number.NaN;
   return Number.isInteger(chosen) ? chosen : Math.max(...values);
@@ -12803,10 +12795,10 @@ function parseLeagues(body) {
   try {
     data = JSON.parse(body);
   } catch {
-    throw new SourceError("bad_response", "competition list: not JSON");
+    throw new SourceError("competition list: not JSON");
   }
   const leagues = data?.leagues;
-  if (!Array.isArray(leagues)) throw new SourceError("bad_response", "competition list: missing");
+  if (!Array.isArray(leagues)) throw new SourceError("competition list: missing");
   return leagues.filter((l) => l && /^\d+$/.test(String(l.id)) && typeof l.name === "string").map((l) => ({ id: Number(l.id), name: String(l.name).trim() }));
 }
 function refOf(href) {
@@ -12836,7 +12828,7 @@ function clubOf(html, team) {
 }
 function parseClubTeams(html) {
   const select = one(parse3(html), "select#ClubSelector");
-  if (!select) throw new SourceError("bad_response", "team page: club selector not found");
+  if (!select) throw new SourceError("team page: club selector not found");
   const teams = [];
   for (const option of all(select, "option")) {
     const params = new URLSearchParams(attr(option, "value") ?? "");
@@ -12873,7 +12865,7 @@ function parseSchedule(html, competition) {
     });
   }
   if (blocks.length && !fixtures.length) {
-    throw new SourceError("bad_response", "team page: schedule rows without teams or dates");
+    throw new SourceError("team page: schedule rows without teams or dates");
   }
   return fixtures;
 }
@@ -12908,7 +12900,6 @@ async function scan(ctx, season, federation, club, category, competition) {
     if (ref) return ref;
   }
   throw new SourceError(
-    "bad_response",
     `club ${club} not found in the first ${category} competitions of federation ${federation} (set federation or competition)`
   );
 }
@@ -12934,7 +12925,7 @@ var mlsz = {
       if (own) category = categoryOf(own.competition);
       federation = given.federation;
     }
-    if (club === null) throw new SourceError("bad_response", "team page: club not found");
+    if (club === null) throw new SourceError("team page: club not found");
     if (!start) {
       start = await scan(
         ctx,
@@ -12960,7 +12951,7 @@ var mlsz = {
     return { ...resolved };
   },
   async fixtures(resolved, ctx) {
-    if (!isMlszResolved(resolved)) throw new SourceError("bad_response", "no resolved teams");
+    if (!isMlszResolved(resolved)) throw new SourceError("no resolved teams");
     const byId = /* @__PURE__ */ new Map();
     for (const team of resolved.teams) {
       const html = await page(ctx, teamPageUrl(team), "team page");
@@ -12997,7 +12988,7 @@ function parseSeasons2(html) {
     }));
     return { season: label, competitions: competitions.filter((c) => Number.isInteger(c.id) && c.name) };
   }).filter((s) => /^\d{4}\/\d{4}$/.test(s.season) && s.competitions.length);
-  if (!seasons.length) throw new SourceError("bad_response", "season list: not found");
+  if (!seasons.length) throw new SourceError("season list: not found");
   return seasons.reduce((newest, s) => s.season > newest.season ? s : newest);
 }
 function pickCompetitions(competitions, cal) {
@@ -13058,10 +13049,10 @@ var mrsz = {
     const picked = pickCompetitions(competitions, cal);
     if (picked.length) return { key: settingsKey2(cal), season, team: cal.team ?? "", competitions: picked };
     if (isMrszResolved(cached) && cached.key === settingsKey2(cal)) return cached;
-    throw new SourceError("bad_response", `season ${season}: no ${cal.category} competition fits`);
+    throw new SourceError(`season ${season}: no ${cal.category} competition fits`);
   },
   async fixtures(resolved, ctx) {
-    if (!isMrszResolved(resolved)) throw new SourceError("bad_response", "competitions not resolved");
+    if (!isMrszResolved(resolved)) throw new SourceError("competitions not resolved");
     const fixtures = [];
     for (const competition of resolved.competitions) {
       const html = await page2(ctx, `${SITE2}/CompetitionMatches.aspx?ID=${competition.id}`, "match list");
@@ -13081,7 +13072,7 @@ function isCup3(competition) {
 }
 async function api(ctx, path, what) {
   const key = ctx.keys?.mvlsz;
-  if (!key) throw new SourceError("bad_response", "FIXTICAL_MVLSZ_KEY is not set");
+  if (!key) throw new SourceError("FIXTICAL_MVLSZ_KEY is not set");
   const url = `${API}/${path}`;
   const cached = ctx.pages.get(url);
   const body = cached ?? await ctx.client.text(url, what, void 0, { "X-AUTH-API-KEY": key });
@@ -13089,7 +13080,7 @@ async function api(ctx, path, what) {
   try {
     return JSON.parse(body);
   } catch {
-    throw new SourceError("bad_response", `${what}: not JSON`);
+    throw new SourceError(`${what}: not JSON`);
   }
 }
 function pickTeams(entries, cal) {
@@ -13136,7 +13127,7 @@ function isMvlszResolved(value) {
 }
 function list(data, what) {
   const items = data?.data ?? data;
-  if (!Array.isArray(items)) throw new SourceError("bad_response", `${what}: missing`);
+  if (!Array.isArray(items)) throw new SourceError(`${what}: missing`);
   return items;
 }
 async function games(ctx, competition) {
@@ -13166,10 +13157,10 @@ var mvlsz = {
     const picked = pickTeams(entries, cal);
     if (picked) return picked;
     if (isMvlszResolved(cached) && cached.key === settingsKey3(cal)) return cached;
-    throw new SourceError("bad_response", `club ${cal.club}: no ${cal.category} team found`);
+    throw new SourceError(`club ${cal.club}: no ${cal.category} team found`);
   },
   async fixtures(resolved, ctx) {
-    if (!isMvlszResolved(resolved)) throw new SourceError("bad_response", "teams not resolved");
+    if (!isMvlszResolved(resolved)) throw new SourceError("teams not resolved");
     const fixtures = [];
     for (const team of resolved.teams) {
       for (const game of await games(ctx, team.competition)) {
@@ -13194,13 +13185,13 @@ var SOURCES = /* @__PURE__ */ new Map([
 var STALE_AFTER_MS = 2 * 86400 * 1e3;
 async function fetchCalendar(cal, previous, client, keys) {
   const source = SOURCES.get(cal.source);
-  if (!source) throw new SourceError("bad_response", `unknown source "${cal.source}"`);
+  if (!source) throw new SourceError(`unknown source "${cal.source}"`);
   const problems = source.validate(cal);
-  if (problems.length) throw new SourceError("bad_response", problems.join("; "));
+  if (problems.length) throw new SourceError(problems.join("; "));
   const ctx = { client, pages: /* @__PURE__ */ new Map(), keys };
   const resolved = await source.resolve(cal, previous?.resolved ?? null, ctx);
   const fixtures = await source.fixtures(resolved, ctx);
-  if (!fixtures.length) throw new SourceError("bad_response", "no fixtures found");
+  if (!fixtures.length) throw new SourceError("no fixtures found");
   return { resolved, fixtures };
 }
 async function refresh(cal, previous, client, now, keys) {
@@ -13259,7 +13250,7 @@ async function build(config, state, client, now, options = {}) {
       fixtures: entry.fixtures,
       updatedAt: entry.updatedAt,
       ics: has ? buildIcs(meta, entry.fixtures, now, extras) : null,
-      json: has ? buildJson(cal.slug, name, TIMEZONE, team, entry.fixtures, now, extras) : null
+      json: has ? buildJson(cal.slug, name, TIMEZONE, team, entry.fixtures, now, places) : null
     });
   }
   return { results, state: next };
@@ -13612,8 +13603,7 @@ async function writeDirectory(dir, results, state, page3 = {}) {
   for (const r of results) {
     if (!r.ics || !r.json) continue;
     await writeAtomic(join2(dir, `${r.slug}.ics`), r.ics);
-    const json = { ...r.json, fixtures: r.json.fixtures.map((f) => ({ ...f, annotation: null })) };
-    await writeAtomic(join2(dir, `${r.slug}.json`), `${JSON.stringify(json, null, 2)}
+    await writeAtomic(join2(dir, `${r.slug}.json`), `${JSON.stringify(r.json, null, 2)}
 `);
     written.push(`${r.slug}.ics`, `${r.slug}.json`);
   }

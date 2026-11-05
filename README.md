@@ -161,7 +161,7 @@ are 24 hours old; newer ones replace them.
 Next to every `<slug>.ics` there is a `<slug>.json` with the same matches, for websites, bots or other
 tools: `schema` (currently `1`), `slug`, `name`, `timezone`, `generated_at` and `fixtures`, each with
 `date`, `time`, `start` (UTC), `home`, `away`, `at_home`, `venue`, `location` (address and coordinates),
-`competition`, `result`, `url` and `annotation` (always empty here: annotations appear in the calendars only).
+`competition`, `result` and `url`. Annotations appear in the calendars only.
 
 ## Command line
 

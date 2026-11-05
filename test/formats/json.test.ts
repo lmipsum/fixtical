@@ -55,21 +55,10 @@ describe("JSON", () => {
       source: "google",
     };
     const places = new Map([["Szusza Ferenc Stadion", place]]);
-    const feed = buildJson("a", "A", TZ, null, [makeFixture(), makeFixture({ venue: "Other" })], NOW, {
-      places,
-    });
+    const feed = buildJson("a", "A", TZ, null, [makeFixture(), makeFixture({ venue: "Other" })], NOW, places);
     expect(feed.fixtures.map((f) => f.location)).toEqual([
       { address: "Megyeri út 13, 1044 Budapest", lat: "47.56", lon: "19.09" },
       null,
     ]);
-  });
-});
-
-describe("annotations in the JSON", () => {
-  it("adds the annotation of the match day, else null", () => {
-    const annotations = new Map([["2026-08-02", { lines: ["x"], url: null }]]);
-    const fixtures = [makeFixture(), makeFixture({ date: "2026-08-09" })];
-    const feed = buildJson("a", "A", TZ, null, fixtures, NOW, { annotations });
-    expect(feed.fixtures.map((f) => f.annotation)).toEqual([{ lines: ["x"], url: null }, null]);
   });
 });
