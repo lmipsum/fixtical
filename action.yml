@@ -22,7 +22,7 @@ inputs:
     description: Address the output directory is published at (e.g. GitHub Pages); adds one-click subscribe links to its page.
     default: ""
   state_url:
-    description: Address of the previously published state.json (e.g. on GitHub Pages), read back before the build.
+    description: Address of the previously published state.json (e.g. on GitHub Pages), read back before the build. The build fails when it cannot be read, unless it is not there yet.
     default: ""
 
 outputs:

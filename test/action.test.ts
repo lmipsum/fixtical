@@ -114,6 +114,22 @@ describe("action", () => {
     expect(lines).toContain("::warning title=ujpest::season list: HTTP 503");
   });
 
+  it("fails rather than build without a previous state it cannot read", async () => {
+    const e = await env({ INPUT_STATE_URL: "https://pages.example/state.json" });
+    const down: FetchLike = async () => new Response("", { status: 503 });
+    expect(await run(e, fakeClient(UJPEST_ROUTES).client, down)).toBe(1);
+    expect(lines).toContain("::error title=state::previous state: HTTP 503");
+    const offline: FetchLike = async () => {
+      throw new TypeError("fetch failed");
+    };
+    expect(await run(e, fakeClient(UJPEST_ROUTES).client, offline)).toBe(1);
+    expect(lines).toContain("::error title=state::previous state: TypeError");
+    await expect(readFile(join(e.INPUT_OUT, "ujpest.ics"), "utf8")).rejects.toThrow();
+
+    // Not published yet (404): the first build starts afresh.
+    expect(await run(e, fakeClient(UJPEST_ROUTES).client, services().fetchFn)).toBe(0);
+  });
+
   it("keeps only the state in the gist, writes it when it changed, and never prints a credential", async () => {
     const s = services(500);
     const patches = () => s.calls.filter((m) => m === "PATCH").length;

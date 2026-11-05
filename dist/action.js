@@ -13681,15 +13681,20 @@ function command(name, message, title) {
 function mask(...values) {
   for (const v of values) if (v) console.log(`::add-mask::${v}`);
 }
+var StateError = class extends Error {
+};
 async function previousState(gistFiles, stateUrl, out, fetchFn) {
   if (gistFiles) return parseState(gistFiles.get(STATE_FILE) ?? null);
   if (stateUrl) {
+    let response;
     try {
-      const response = await fetchFn(stateUrl, { signal: AbortSignal.timeout(2e4) });
-      return parseState(response.ok ? await response.text() : null);
-    } catch {
-      return parseState(null);
+      response = await fetchFn(stateUrl, { signal: AbortSignal.timeout(2e4) });
+    } catch (e) {
+      throw new StateError(`previous state: ${e instanceof Error ? e.name : "request failed"}`);
     }
+    if (response.status === 404) return emptyState();
+    if (!response.ok) throw new StateError(`previous state: HTTP ${response.status}`);
+    return parseState(await response.text());
   }
   return await readState(out);
 }
@@ -13764,8 +13769,8 @@ async function run(env = process.env, client = new Client(), fetchFn = defaultFe
     await setOutput(env, "configured", "true");
     return results.some((r) => !r.ics) ? 1 : 0;
   } catch (e) {
-    if (!(e instanceof GistError)) throw e;
-    command("error", e.message, "gist");
+    if (!(e instanceof GistError || e instanceof StateError)) throw e;
+    command("error", e.message, e instanceof GistError ? "gist" : "state");
     return 1;
   }
 }

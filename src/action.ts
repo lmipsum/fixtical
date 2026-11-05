@@ -7,7 +7,7 @@ import { Client, defaultFetch, type FetchLike } from "./http.ts";
 import { isTopic, sendNtfy } from "./notify/ntfy.ts";
 import { writeDirectory } from "./publish/directory.ts";
 import { Gist, GistError } from "./publish/gist.ts";
-import { parseState, readState, STATE_FILE, type State } from "./state.ts";
+import { emptyState, parseState, readState, STATE_FILE, type State } from "./state.ts";
 
 type Env = NodeJS.ProcessEnv;
 
@@ -41,6 +41,9 @@ function mask(...values: (string | undefined)[]): void {
   for (const v of values) if (v) console.log(`::add-mask::${v}`);
 }
 
+/** The previous state could not be read: building without it would drop the last good fixtures. */
+class StateError extends Error {}
+
 async function previousState(
   gistFiles: Map<string, string> | null,
   stateUrl: string,
@@ -49,12 +52,16 @@ async function previousState(
 ): Promise<State> {
   if (gistFiles) return parseState(gistFiles.get(STATE_FILE) ?? null);
   if (stateUrl) {
+    let response: Response;
     try {
-      const response = await fetchFn(stateUrl, { signal: AbortSignal.timeout(20000) });
-      return parseState(response.ok ? await response.text() : null);
-    } catch {
-      return parseState(null);
+      response = await fetchFn(stateUrl, { signal: AbortSignal.timeout(20000) });
+    } catch (e) {
+      throw new StateError(`previous state: ${e instanceof Error ? e.name : "request failed"}`);
     }
+    // Not published yet: the first build.
+    if (response.status === 404) return emptyState();
+    if (!response.ok) throw new StateError(`previous state: HTTP ${response.status}`);
+    return parseState(await response.text());
   }
   return await readState(out);
 }
@@ -151,8 +158,8 @@ export async function run(
     await setOutput(env, "configured", "true");
     return results.some((r) => !r.ics) ? 1 : 0;
   } catch (e) {
-    if (!(e instanceof GistError)) throw e;
-    command("error", e.message, "gist");
+    if (!(e instanceof GistError || e instanceof StateError)) throw e;
+    command("error", e.message, e instanceof GistError ? "gist" : "state");
     return 1;
   }
 }
