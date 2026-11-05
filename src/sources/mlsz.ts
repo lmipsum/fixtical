@@ -1,10 +1,9 @@
-import { selectAll, selectOne } from "css-select";
-import type { AnyNode, Element } from "domhandler";
-import { getAttributeValue, hasAttrib, textContent } from "domutils";
-import { parseDocument } from "htmlparser2";
+import { hasAttrib, textContent } from "domutils";
 import type { CalendarConfig, Category } from "../config.ts";
 import { SourceError } from "../http.ts";
-import type { Fixture } from "../model.ts";
+import { byKickoff, type Fixture } from "../model.ts";
+import { fold } from "../util.ts";
+import { all, attr, competitionPattern, dateTime, isCup, one, page, parse, text } from "./common.ts";
 import type { Resolved, Source, SourceContext } from "./types.ts";
 
 const SITE = "https://adatbank.mlsz.hu";
@@ -35,14 +34,6 @@ interface MlszResolved {
   teams: TeamEntry[];
 }
 
-function fold(text: string): string {
-  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-}
-
-export function isCup(competition: string): boolean {
-  return /kupa/.test(fold(competition));
-}
-
 /** The category of a competition, from its name. */
 export function categoryOf(competition: string): Category {
   const name = fold(competition);
@@ -52,8 +43,8 @@ export function categoryOf(competition: string): Category {
   return women ? "women" : "men";
 }
 
-export function parseTeamUrl(url: string): TeamRef | null {
-  const m = TEAM_URL_RE.exec(url);
+/** The team of a match of season, federation, league, round and team ids. */
+function teamRef(m: RegExpExecArray | null): TeamRef | null {
   if (!m) return null;
   const [season, federation, league, round, team] = m.slice(1).map(Number) as [
     number,
@@ -65,14 +56,9 @@ export function parseTeamUrl(url: string): TeamRef | null {
   return { season, federation, league, round, team };
 }
 
-type Root = AnyNode | AnyNode[];
-
-const parse = (html: string): Root => parseDocument(html).children;
-const all = (root: Root, selector: string): Element[] => selectAll(selector, root);
-const one = (root: Root, selector: string): Element | null => selectOne(selector, root);
-const attr = (el: Element | null | undefined, name: string): string | undefined =>
-  el ? getAttributeValue(el, name) : undefined;
-const text = (el: Element | null | undefined): string | undefined => (el ? textContent(el) : undefined);
+export function parseTeamUrl(url: string): TeamRef | null {
+  return teamRef(TEAM_URL_RE.exec(url));
+}
 
 export function teamPageUrl(ref: TeamRef): string {
   return `${SITE}/club/${ref.season}/${ref.federation}/${ref.league}/${ref.round}/${ref.team}.html`;
@@ -82,7 +68,7 @@ export function teamPageUrl(ref: TeamRef): string {
 export function parseSeasons(html: string): number {
   const options = all(parse(html), "select#evad option");
   const values = options.map((o) => Number(attr(o, "value"))).filter(Number.isInteger);
-  if (!values.length) throw new SourceError("bad_response", "season list: not found");
+  if (!values.length) throw new SourceError("season list: not found");
   const selected = options.find((o) => hasAttrib(o, "selected"));
   const chosen = selected ? Number(attr(selected, "value")) : Number.NaN;
   return Number.isInteger(chosen) ? chosen : Math.max(...values);
@@ -94,26 +80,17 @@ export function parseLeagues(body: string): { id: number; name: string }[] {
   try {
     data = JSON.parse(body);
   } catch {
-    throw new SourceError("bad_response", "competition list: not JSON");
+    throw new SourceError("competition list: not JSON");
   }
   const leagues = (data as { leagues?: unknown })?.leagues;
-  if (!Array.isArray(leagues)) throw new SourceError("bad_response", "competition list: missing");
+  if (!Array.isArray(leagues)) throw new SourceError("competition list: missing");
   return leagues
     .filter((l) => l && /^\d+$/.test(String(l.id)) && typeof l.name === "string")
     .map((l) => ({ id: Number(l.id), name: String(l.name).trim() }));
 }
 
 function refOf(href: string | undefined): TeamRef | null {
-  const m = href ? TEAM_HREF_RE.exec(href) : null;
-  if (!m) return null;
-  const [season, federation, league, round, team] = m.slice(1).map(Number) as [
-    number,
-    number,
-    number,
-    number,
-    number,
-  ];
-  return { season, federation, league, round, team };
+  return teamRef(href ? TEAM_HREF_RE.exec(href) : null);
 }
 
 /** The club's team on a page that links it next to the club logo. */
@@ -142,7 +119,7 @@ export function clubOf(html: string, team: number): number | null {
 /** Every team of the club this season, from a team page's club selector. */
 export function parseClubTeams(html: string): TeamEntry[] {
   const select = one(parse(html), "select#ClubSelector");
-  if (!select) throw new SourceError("bad_response", "team page: club selector not found");
+  if (!select) throw new SourceError("team page: club selector not found");
   const teams: TeamEntry[] = [];
   for (const option of all(select, "option")) {
     const params = new URLSearchParams(attr(option, "value") ?? "");
@@ -171,14 +148,11 @@ export function parseSchedule(html: string, competition: string): Fixture[] {
     const away = attr(one(block, ".away_team a"), "title")?.trim();
     const when = DATE_RE.exec(text(one(block, ".team_sorsolas_date"))?.replace(/\s+/g, " ") ?? "");
     if (!/^\d+$/.test(id) || !home || !away || !when) continue;
-    const [, y, mo, d, hh, mm] = when;
-    const two = (s: string | undefined) => String(s).padStart(2, "0");
     const href = attr(one(block, 'a[href*="/match/"]'), "href") ?? "";
     fixtures.push({
       source: "mlsz",
       id,
-      date: `${y}-${two(mo)}-${two(d)}`,
-      time: hh !== undefined ? `${two(hh)}:${mm}` : null,
+      ...dateTime(when),
       home,
       away,
       venue: text(one(block, ".team_sorsolas_arena"))?.replace(/\s+/g, " ").trim() ?? "",
@@ -188,23 +162,9 @@ export function parseSchedule(html: string, competition: string): Fixture[] {
     });
   }
   if (blocks.length && !fixtures.length) {
-    throw new SourceError("bad_response", "team page: schedule rows without teams or dates");
+    throw new SourceError("team page: schedule rows without teams or dates");
   }
   return fixtures;
-}
-
-async function page(
-  ctx: SourceContext,
-  url: string,
-  what: string,
-  form?: Record<string, string>,
-): Promise<string> {
-  const key = form ? `${url}?${new URLSearchParams(form)}` : url;
-  const cached = ctx.pages.get(key);
-  if (cached !== undefined) return cached;
-  const body = await ctx.client.text(url, what, form);
-  ctx.pages.set(key, body);
-  return body;
 }
 
 function settingsKey(cal: CalendarConfig): string {
@@ -246,7 +206,6 @@ async function scan(
     if (ref) return ref;
   }
   throw new SourceError(
-    "bad_response",
     `club ${club} not found in the first ${category} competitions of federation ${federation} (set federation or competition)`,
   );
 }
@@ -278,16 +237,9 @@ export const mlsz: Source = {
       if (own) category = categoryOf(own.competition);
       federation = given.federation;
     }
-    if (club === null) throw new SourceError("bad_response", "team page: club not found");
+    if (club === null) throw new SourceError("team page: club not found");
     if (!start) {
-      start = await scan(
-        ctx,
-        season,
-        federation,
-        club,
-        category,
-        cal.competition ? new RegExp(cal.competition, "iu") : null,
-      );
+      start = await scan(ctx, season, federation, club, category, competitionPattern(cal));
     }
 
     const html = await page(ctx, teamPageUrl(start), "team page");
@@ -306,17 +258,12 @@ export const mlsz: Source = {
   },
 
   async fixtures(resolved, ctx) {
-    if (!isMlszResolved(resolved)) throw new SourceError("bad_response", "no resolved teams");
+    if (!isMlszResolved(resolved)) throw new SourceError("no resolved teams");
     const byId = new Map<string, Fixture>();
     for (const team of resolved.teams) {
       const html = await page(ctx, teamPageUrl(team), "team page");
       for (const f of parseSchedule(html, team.competition)) if (!byId.has(f.id)) byId.set(f.id, f);
     }
-    return [...byId.values()].sort(
-      (a, b) =>
-        a.date.localeCompare(b.date) ||
-        (a.time ?? "").localeCompare(b.time ?? "") ||
-        a.id.localeCompare(b.id),
-    );
+    return [...byId.values()].sort(byKickoff);
   },
 };

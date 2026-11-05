@@ -1,28 +1,16 @@
 import { appendFile } from "node:fs/promises";
-import {
-  ANNOTATIONS_MAX_AGE_MS,
-  type Annotations,
-  addAnnotations,
-  dispatchedNote,
-  producerOf,
-  updatedAt,
-} from "./annotations.ts";
-import { build, type CalendarResult } from "./build.ts";
+import { collectNotes } from "./annotations.ts";
+import { build, type CalendarResult, fetchDue } from "./build.ts";
 import { type Config, ConfigError, readConfig } from "./config.ts";
 import { Geocoder } from "./geocode.ts";
 import { Client, defaultFetch, type FetchLike } from "./http.ts";
 import { isTopic, sendNtfy } from "./notify/ntfy.ts";
-import { writeDirectory } from "./publish/directory.ts";
-import { changedFiles, Gist, GistError } from "./publish/gist.ts";
-import { parseState, readState, STATE_FILE, type State } from "./state.ts";
+import { contentDigest, writeDirectory } from "./publish/directory.ts";
+import { Gist, GistError } from "./publish/gist.ts";
+import { emptyState, parseState, readState, STATE_FILE, type State } from "./state.ts";
+import { NOTIFY } from "./texts.ts";
 
 type Env = NodeJS.ProcessEnv;
-
-const MESSAGES = {
-  failing: (error: string) => `Nem frissül (${error}); a korábbi menetrend marad kint.`,
-  recovered: "Újra frissül.",
-  test: "Teszt értesítés: a naptár értesítései ide érkeznek.",
-};
 
 function input(env: Env, name: string): string {
   return (env[`INPUT_${name.toUpperCase()}`] ?? "").trim();
@@ -48,6 +36,9 @@ function mask(...values: (string | undefined)[]): void {
   for (const v of values) if (v) console.log(`::add-mask::${v}`);
 }
 
+/** The previous state could not be read: building without it would drop the last good fixtures. */
+class StateError extends Error {}
+
 async function previousState(
   gistFiles: Map<string, string> | null,
   stateUrl: string,
@@ -56,12 +47,16 @@ async function previousState(
 ): Promise<State> {
   if (gistFiles) return parseState(gistFiles.get(STATE_FILE) ?? null);
   if (stateUrl) {
+    let response: Response;
     try {
-      const response = await fetchFn(stateUrl, { signal: AbortSignal.timeout(20000) });
-      return parseState(response.ok ? await response.text() : null);
-    } catch {
-      return parseState(null);
+      response = await fetchFn(stateUrl, { signal: AbortSignal.timeout(20000) });
+    } catch (e) {
+      throw new StateError(`previous state: ${e instanceof Error ? e.name : "request failed"}`);
     }
+    // Not published yet: the first build.
+    if (response.status === 404) return emptyState();
+    if (!response.ok) throw new StateError(`previous state: HTTP ${response.status}`);
+    return parseState(await response.text());
   }
   return await readState(out);
 }
@@ -69,7 +64,13 @@ async function previousState(
 /** The job summary's table of the builds; a status keeps its pipes and backslashes. */
 export function summaryTable(results: readonly CalendarResult[]): string {
   const rows = results.map((r) => {
-    const status = !r.error ? "updated" : r.ics ? `not updated: ${r.error}` : `failed: ${r.error}`;
+    const status = !r.fetched
+      ? "not read this time"
+      : !r.error
+        ? "updated"
+        : r.ics
+          ? `not updated: ${r.error}`
+          : `failed: ${r.error}`;
     return `| ${r.slug} | ${r.fixtures.length} | ${status.replace(/[\\|]/g, "\\$&")} |`;
   });
   return ["| Calendar | Fixtures | Status |", "|---|---|---|", ...rows].join("\n");
@@ -77,12 +78,9 @@ export function summaryTable(results: readonly CalendarResult[]): string {
 
 async function notify(results: readonly CalendarResult[], topic: string, fetchFn: FetchLike): Promise<void> {
   for (const r of results) {
+    if (!r.fetched) continue;
     const message =
-      r.error && !r.wasFailing
-        ? MESSAGES.failing(r.error)
-        : !r.error && r.wasFailing
-          ? MESSAGES.recovered
-          : null;
+      r.error && !r.wasFailing ? NOTIFY.failing(r.error) : !r.error && r.wasFailing ? NOTIFY.recovered : null;
     if (message && !(await sendNtfy(topic, r.name, message, fetchFn))) {
       command("warning", "The notification could not be sent.");
     }
@@ -91,7 +89,7 @@ async function notify(results: readonly CalendarResult[], topic: string, fetchFn
 
 /**
  * The action: builds the configured calendars into `out` and, with a gist
- * token and id, publishes them to that gist. Credentials come from the
+ * token and id, keeps the state in that gist. Credentials come from the
  * environment (FIXTICAL_GIST_TOKEN, FIXTICAL_GIST_ID, FIXTICAL_NTFY_TOPIC).
  */
 export async function run(
@@ -128,60 +126,32 @@ export async function run(
   }
 
   const gist = token && gistId ? new Gist(token, gistId, fetchFn) : null;
-  let gistFiles: Map<string, string> | null = null;
   try {
-    gistFiles = gist ? await gist.files() : null;
+    const gistFiles = gist ? await gist.files() : null;
     const state = await previousState(gistFiles, input(env, "state_url"), out, fetchFn);
     const now = new Date();
-    const annotations: Annotations = new Map();
-    const problems: string[] = [];
-    // One file per producer: the newest of what it sent with a dispatch and what it wrote to the gist.
-    const producers = new Map<string, { text: string; label: string; kept: boolean }>();
-    const offer = (producer: string, text: string, label: string, kept: boolean) => {
-      const current = producers.get(producer);
-      if (!current || !(updatedAt(current.text) >= updatedAt(text)))
-        producers.set(producer, { text, label, kept });
-    };
-    for (const [producer, text] of Object.entries(state.notes ?? {}))
-      offer(producer, text, `sent by ${producer}`, true);
-    for (const [name, text] of gistFiles ?? []) {
-      if (/^annotations[^/]*\.json$/.test(name)) offer(producerOf(name), text, `gist ${name}`, false);
-    }
-    const sent = dispatchedNote(input(env, "dispatch"));
-    if (typeof sent === "string") problems.push(sent);
-    else if (sent)
-      producers.set(sent.producer, { text: sent.text, label: `sent by ${sent.producer}`, kept: true });
-    for (const [, { text, label }] of [...producers].sort(([a], [b]) => a.localeCompare(b))) {
-      for (const problem of addAnnotations(annotations, text, now, ANNOTATIONS_MAX_AGE_MS)) {
-        problems.push(`${label}: ${problem}`);
-      }
-    }
+    const { annotations, notes, problems } = collectNotes(state.notes ?? {}, input(env, "dispatch"), now);
     for (const problem of problems) command("warning", problem, "annotations");
-    const geocoder = new Geocoder({ googleKey, fetch: fetchFn });
+    // The sources are read every few hours, or when asked; in between the calendars are
+    // built from the fixtures read last, with the current annotations and links.
+    const fetch = input(env, "fetch") === "always" || fetchDue(state, now);
     const { results, state: next } = await build(config, state, client, now, {
       annotations,
-      geocoder,
+      geocoder: fetch ? new Geocoder({ googleKey, fetch: fetchFn }) : null,
       keys: { mvlsz: mvlszKey },
+      fetch,
     });
-    const kept = [...producers].filter(
-      ([, p]) => p.kept && now.getTime() - updatedAt(p.text) <= ANNOTATIONS_MAX_AGE_MS,
-    );
-    if (kept.length) next.notes = Object.fromEntries(kept.map(([producer, p]) => [producer, p.text]));
+    if (Object.keys(notes).length) next.notes = notes;
+    next.digest = contentDigest(results);
+    // Reading the sources changes the state, which is published too.
+    const changed = fetch || next.digest !== state.digest;
     await writeDirectory(out, results, next, { siteUrl: input(env, "site_url") });
-    let changed: string[] = [];
-    if (gist && gistFiles) {
-      const inGist = new Set(config.calendars.filter((c) => c.gist).map((c) => c.slug));
-      const files = changedFiles(
-        gistFiles,
-        results.filter((r) => inGist.has(r.slug)),
-        next,
-      );
-      changed = Object.keys(files);
-      if (changed.length) await gist.update(files);
-    }
+    // The gist keeps the state with the annotations, which the published one leaves out.
+    const stateText = `${JSON.stringify(next)}\n`;
+    if (gist && gistFiles?.get(STATE_FILE) !== stateText) await gist.update({ [STATE_FILE]: stateText });
     if (notifyTopic) await notify(results, notifyTopic, fetchFn);
     if (input(env, "notify_test") === "true") {
-      const sent = notifyTopic && (await sendNtfy(notifyTopic, "fixtical", MESSAGES.test, fetchFn));
+      const sent = notifyTopic && (await sendNtfy(notifyTopic, "fixtical", NOTIFY.test, fetchFn));
       command(sent ? "notice" : "warning", sent ? "Test notification sent." : "Test notification not sent.");
     }
 
@@ -190,12 +160,11 @@ export async function run(
     }
     await addSummary(env, summaryTable(results));
     await setOutput(env, "configured", "true");
-    await setOutput(env, "target", gist ? "gist" : "directory");
-    await setOutput(env, "changed", String(changed.length));
+    await setOutput(env, "changed", String(changed));
     return results.some((r) => !r.ics) ? 1 : 0;
   } catch (e) {
-    if (!(e instanceof GistError)) throw e;
-    command("error", e.message, "gist");
+    if (!(e instanceof GistError || e instanceof StateError)) throw e;
+    command("error", e.message, e instanceof GistError ? "gist" : "state");
     return 1;
   }
 }

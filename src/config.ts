@@ -1,5 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { parse as parseYaml } from "yaml";
+import { SOURCES } from "./sources/index.ts";
+import { isRecord } from "./util.ts";
 
 export const CATEGORIES = ["men", "women", "futsal", "women-futsal", "youth"] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -18,8 +20,6 @@ export interface CalendarConfig {
   /** Regular expression on the competition name, narrowing the category. */
   competition: string | null;
   include: { league: boolean; cup: boolean };
-  /** Whether the feed also goes to the gist, when there is one (else only to the output directory). */
-  gist: boolean;
 }
 
 export interface Config {
@@ -37,7 +37,8 @@ export class ConfigError extends Error {
 }
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
-const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+/** A colour setting: #rrggbb. */
+export const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 const CALENDAR_KEYS = new Set([
   "source",
   "slug",
@@ -49,12 +50,7 @@ const CALENDAR_KEYS = new Set([
   "category",
   "competition",
   "include",
-  "gist",
 ]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function defaultSlug(
   teamUrl: string | null,
@@ -102,6 +98,7 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
   };
 
   const source = str("source") ?? "mlsz";
+  if (!SOURCES.has(source)) problems.push(`${where}.source: one of ${[...SOURCES.keys()].join(", ")}`);
   const teamUrl = str("team_url");
   const club = int("club");
   const team = str("team");
@@ -134,14 +131,11 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
     }
   }
 
-  const gist = raw.gist ?? true;
-  if (typeof gist !== "boolean") problems.push(`${where}.gist: true or false`);
-
   const slug = str("slug") ?? defaultSlug(teamUrl, club, team, category ?? "men");
   if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
 
   if (problems.length > before || !category) return null;
-  return {
+  const cal: CalendarConfig = {
     source,
     slug,
     color,
@@ -152,8 +146,11 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
     category,
     competition,
     include,
-    gist: gist as boolean,
   };
+  // The source's own settings: e.g. water polo needs a club, volleyball a team.
+  const own = SOURCES.get(source)?.validate(cal) ?? [];
+  for (const problem of own) problems.push(`${where}.${problem}`);
+  return own.length ? null : cal;
 }
 
 /** The configuration from a fixtical.yml text. */

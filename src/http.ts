@@ -1,13 +1,10 @@
-export type FailureKind = "network" | "server" | "blocked" | "bad_response";
+import { sleep } from "./util.ts";
 
 /** A source could not be read. The message names what failed, never a credential. */
 export class SourceError extends Error {
-  readonly kind: FailureKind;
-
-  constructor(kind: FailureKind, message: string) {
+  constructor(message: string) {
     super(message);
     this.name = "SourceError";
-    this.kind = kind;
   }
 }
 
@@ -38,11 +35,10 @@ export class Client {
   private readonly timeoutMs: number;
   private readonly userAgent: string;
   private readonly last = new Map<string, number>();
-  requests = 0;
 
   constructor(options: ClientOptions = {}) {
     this.fetchFn = options.fetch ?? defaultFetch;
-    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.sleep = options.sleep ?? sleep;
     this.now = options.now ?? Date.now;
     this.minGapMs = options.minGapMs ?? 2000;
     this.timeoutMs = options.timeoutMs ?? 20000;
@@ -59,7 +55,6 @@ export class Client {
     const host = new URL(url).host;
     const wait = (this.last.get(host) ?? Number.NEGATIVE_INFINITY) + this.minGapMs - this.now();
     if (wait > 0) await this.sleep(wait);
-    this.requests += 1;
     const headers: Record<string, string> = {
       "User-Agent": this.userAgent,
       "Accept-Language": "hu",
@@ -76,19 +71,11 @@ export class Client {
     try {
       response = await this.fetchFn(url, init);
     } catch (e) {
-      throw new SourceError("network", `${what}: ${e instanceof Error ? e.name : "request failed"}`);
+      throw new SourceError(`${what}: ${e instanceof Error ? e.name : "request failed"}`);
     } finally {
       this.last.set(host, this.now());
     }
-    if (!response.ok) {
-      const kind =
-        response.status === 403 || response.status === 429
-          ? "blocked"
-          : response.status >= 500
-            ? "server"
-            : "bad_response";
-      throw new SourceError(kind, `${what}: HTTP ${response.status}`);
-    }
+    if (!response.ok) throw new SourceError(`${what}: HTTP ${response.status}`);
     return await response.text();
   }
 }

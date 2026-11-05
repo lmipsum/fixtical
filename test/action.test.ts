@@ -38,6 +38,8 @@ async function env(
   return {
     INPUT_CONFIG: configPath,
     INPUT_OUT: join(dir, "public"),
+    // Every build reads the sources, unless a test leaves it to their age.
+    INPUT_FETCH: "always",
     GITHUB_OUTPUT: join(dir, "output"),
     GITHUB_STEP_SUMMARY: join(dir, "summary"),
     ...extra,
@@ -48,8 +50,10 @@ async function env(
 function services(ntfyStatus = 200) {
   const gist = new Map<string, string>();
   const pushes: string[] = [];
+  const calls: string[] = [];
   const fetchFn: FetchLike = async (url, init) => {
     if (url === `https://api.github.com/gists/${GIST}`) {
+      calls.push(init.method ?? "GET");
       if (init.method === "PATCH") {
         const { files } = JSON.parse(String(init.body)) as { files: Record<string, { content: string }> };
         for (const [name, file] of Object.entries(files)) gist.set(name, file.content);
@@ -63,7 +67,7 @@ function services(ntfyStatus = 200) {
     }
     return new Response("", { status: 404 });
   };
-  return { gist, pushes, fetchFn };
+  return { gist, pushes, calls, fetchFn };
 }
 
 function secretsOutsideMasks(): string[] {
@@ -91,7 +95,7 @@ describe("action", () => {
     const e = await env();
     expect(await run(e, fakeClient(UJPEST_ROUTES).client, services().fetchFn)).toBe(0);
     expect(await readFile(join(e.INPUT_OUT, "ujpest.ics"), "utf8")).toContain("BEGIN:VEVENT");
-    expect(await readFile(e.GITHUB_OUTPUT, "utf8")).toBe("configured=true\ntarget=directory\nchanged=0\n");
+    expect(await readFile(e.GITHUB_OUTPUT, "utf8")).toBe("configured=true\nchanged=true\n");
     expect(await readFile(e.GITHUB_STEP_SUMMARY, "utf8")).toContain("| ujpest | 4 | updated |");
   });
 
@@ -112,15 +116,33 @@ describe("action", () => {
     expect(lines).toContain("::warning title=ujpest::season list: HTTP 503");
   });
 
-  it("publishes to the gist only what changed, and never prints a credential", async () => {
+  it("fails rather than build without a previous state it cannot read", async () => {
+    const e = await env({ INPUT_STATE_URL: "https://pages.example/state.json" });
+    const down: FetchLike = async () => new Response("", { status: 503 });
+    expect(await run(e, fakeClient(UJPEST_ROUTES).client, down)).toBe(1);
+    expect(lines).toContain("::error title=state::previous state: HTTP 503");
+    const offline: FetchLike = async () => {
+      throw new TypeError("fetch failed");
+    };
+    expect(await run(e, fakeClient(UJPEST_ROUTES).client, offline)).toBe(1);
+    expect(lines).toContain("::error title=state::previous state: TypeError");
+    await expect(readFile(join(e.INPUT_OUT, "ujpest.ics"), "utf8")).rejects.toThrow();
+
+    // Not published yet (404): the first build starts afresh.
+    expect(await run(e, fakeClient(UJPEST_ROUTES).client, services().fetchFn)).toBe(0);
+  });
+
+  it("keeps only the state in the gist, writes it when it changed, and never prints a credential", async () => {
     const s = services(500);
+    const patches = () => s.calls.filter((m) => m === "PATCH").length;
     const e = await env({ FIXTICAL_GIST_TOKEN: TOKEN, FIXTICAL_GIST_ID: GIST, FIXTICAL_NTFY_TOPIC: TOPIC });
     expect(await run(e, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
-    expect([...s.gist.keys()].sort()).toEqual(["state.json", "ujpest.ics", "ujpest.json"]);
-    expect(await readFile(e.GITHUB_OUTPUT, "utf8")).toContain("target=gist\nchanged=3\n");
+    expect([...s.gist.keys()]).toEqual(["state.json"]);
+    expect(patches()).toBe(1);
 
-    expect(await run(e, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
-    expect(await readFile(e.GITHUB_OUTPUT, "utf8")).toMatch(/changed=0\n$/);
+    // Nothing read, nothing changed: the gist is left alone.
+    expect(await run({ ...e, INPUT_FETCH: "" }, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
+    expect(patches()).toBe(1);
 
     // The source fails: one notification (which ntfy refuses here), the feed stays.
     expect(await run(e, fakeClient([[/./, 503]]).client, s.fetchFn)).toBe(0);
@@ -144,22 +166,6 @@ describe("action", () => {
     ]);
   });
 
-  it("keeps a calendar with gist: false out of the gist", async () => {
-    const s = services();
-    const config = `calendars:
-  - club: 14374
-    slug: ujpest
-  - club: 14374
-    slug: only-pages
-    gist: false
-`;
-    const e = await env({ FIXTICAL_GIST_TOKEN: TOKEN, FIXTICAL_GIST_ID: GIST }, config);
-    expect(await run(e, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
-    expect([...s.gist.keys()].sort()).toEqual(["state.json", "ujpest.ics", "ujpest.json"]);
-    expect(await readFile(join(e.INPUT_OUT, "only-pages.ics"), "utf8")).toContain("BEGIN:VCALENDAR");
-    expect(JSON.parse(s.gist.get("state.json") ?? "{}").calendars).toHaveProperty("only-pages");
-  });
-
   it("fails on a calendar with nothing to publish, and on gist errors", async () => {
     const e = await env();
     expect(await run(e, fakeClient([[/./, 503]]).client, services().fetchFn)).toBe(1);
@@ -172,41 +178,24 @@ describe("action", () => {
     expect(secretsOutsideMasks()).toEqual([]);
   });
 
-  it("reads the annotation files of the gist", async () => {
-    const s = services();
-    const e = await env({ FIXTICAL_GIST_TOKEN: TOKEN, FIXTICAL_GIST_ID: GIST });
-    s.gist.set(
-      "annotations-ticket-watch.json",
-      JSON.stringify({
-        updated_at: new Date().toISOString(),
-        calendars: { ujpest: { "2026-08-02": { lines: ["From the gist"] } } },
-      }),
-    );
-    s.gist.set("annotations-broken.json", "{");
-    expect(await run(e, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
-    expect(s.gist.get("ujpest.ics")).toContain("From the gist");
-    expect(lines).toContain("::warning title=annotations::gist annotations-broken.json: not valid JSON");
-  });
-
   it("keeps the annotations a producer sends with a dispatch, the newest per producer", async () => {
     const s = services();
     const note = (line: string, at: Date) => ({
       updated_at: at.toISOString(),
       calendars: { ujpest: { "2026-08-02": { lines: [line] } } },
     });
-    s.gist.set(
-      "annotations-ticket-watch.json",
-      JSON.stringify(note("Old, from the gist", new Date(Date.now() - 60000))),
-    );
-    const payload = JSON.stringify({
-      producer: "ticket-watch",
-      annotations: note("Sent with the dispatch", new Date()),
-    });
-    const e = await env({ FIXTICAL_GIST_TOKEN: TOKEN, FIXTICAL_GIST_ID: GIST, INPUT_DISPATCH: payload });
+    const send = (line: string) =>
+      env({
+        FIXTICAL_GIST_TOKEN: TOKEN,
+        FIXTICAL_GIST_ID: GIST,
+        INPUT_DISPATCH: JSON.stringify({ producer: "ticket-watch", annotations: note(line, new Date()) }),
+      });
+    expect(await run(await send("Sent first"), fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
+    const e = await send("Sent with the dispatch");
     expect(await run(e, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
-    const ics = unfold(s.gist.get("ujpest.ics") ?? "");
+    const ics = unfold(await readFile(join(e.INPUT_OUT, "ujpest.ics"), "utf8"));
     expect(ics).toContain("Sent with the dispatch");
-    expect(ics).not.toContain("Old, from the gist");
+    expect(ics).not.toContain("Sent first");
     expect(JSON.parse(s.gist.get("state.json") ?? "{}").notes).toHaveProperty("ticket-watch");
 
     // The next build has no dispatch: the kept file still counts.
@@ -214,6 +203,37 @@ describe("action", () => {
     expect(await run(again, fakeClient(UJPEST_ROUTES).client, s.fetchFn)).toBe(0);
     const kept = unfold(await readFile(join(again.INPUT_OUT, "ujpest.ics"), "utf8"));
     expect(kept).toContain("Sent with the dispatch");
+  });
+
+  it("reads the sources when due, else builds from the last matches and tells what changed", async () => {
+    const s = services();
+    const gist = { FIXTICAL_GIST_TOKEN: TOKEN, FIXTICAL_GIST_ID: GIST };
+    expect(
+      await run(await env({ ...gist, INPUT_FETCH: "" }), fakeClient(UJPEST_ROUTES).client, s.fetchFn),
+    ).toBe(0);
+    expect(await readFile(join(dir, "output"), "utf8")).toMatch(/changed=true\n$/);
+
+    // Within six hours: nothing is read, nothing changed.
+    const quiet = fakeClient([[/./, 503]]);
+    expect(await run(await env({ ...gist, INPUT_FETCH: "" }), quiet.client, s.fetchFn)).toBe(0);
+    expect(quiet.seen).toEqual([]);
+    expect(await readFile(join(dir, "output"), "utf8")).toMatch(/changed=false\n$/);
+    expect(await readFile(join(dir, "summary"), "utf8")).toMatch(
+      /\| ujpest \| 4 \| not read this time \|\n$/,
+    );
+
+    // An annotation arrives: still nothing read, but the calendar changed.
+    const payload = JSON.stringify({
+      producer: "ticket-watch",
+      annotations: {
+        updated_at: new Date().toISOString(),
+        calendars: { ujpest: { "2026-08-02": { lines: ["New line"] } } },
+      },
+    });
+    const sent = await env({ ...gist, INPUT_FETCH: "", INPUT_DISPATCH: payload });
+    expect(await run(sent, quiet.client, s.fetchFn)).toBe(0);
+    expect(quiet.seen).toEqual([]);
+    expect(await readFile(join(dir, "output"), "utf8")).toMatch(/changed=true\n$/);
   });
 
   it("warns about a dispatch it cannot read", async () => {
@@ -266,7 +286,13 @@ describe("action", () => {
 
 describe("summaryTable", () => {
   it("escapes pipes and backslashes in a status", () => {
-    const failed = { slug: "ujpest", fixtures: [], error: "a\\|b", ics: null } as unknown as CalendarResult;
+    const failed = {
+      slug: "ujpest",
+      fixtures: [],
+      error: "a\\|b",
+      ics: null,
+      fetched: true,
+    } as unknown as CalendarResult;
     expect(summaryTable([failed])).toContain("| ujpest | 0 | failed: a\\\\\\|b |");
   });
 });

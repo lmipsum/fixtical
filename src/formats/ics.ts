@@ -1,7 +1,8 @@
 import type { Annotation } from "../annotations.ts";
-import type { Place } from "../geocode.ts";
+import { type Place, placeAddress } from "../geocode.ts";
 import { type Fixture, kickoff } from "../model.ts";
 import { teamName } from "../team-names.ts";
+import { FEED } from "../texts.ts";
 import { addDays, localDate } from "../time.ts";
 
 export interface FeedMeta {
@@ -19,7 +20,6 @@ export interface FeedExtras {
 }
 
 const MATCH_LENGTH_MS = 2 * 3600 * 1000;
-const stale = (date: string) => `A naptár nem frissült ${date} óta`;
 
 /** RFC 5545 TEXT value escaping. */
 export function escapeText(text: string): string {
@@ -68,7 +68,7 @@ function dateValue(date: string): string {
 export function locationLines(venue: string, place: Place | undefined): string[] {
   if (!venue) return [];
   if (!place) return [`LOCATION:${escapeText(venue)}`];
-  const address = [place.street, place.town].filter(Boolean).join(", ");
+  const address = placeAddress(place);
   const full = `${venue}, ${address}`;
   return [
     `LOCATION:${escapeText(full)}`,
@@ -85,6 +85,25 @@ export function summary(f: Fixture): string {
   return f.competition ? `${match} | ${f.competition}` : match;
 }
 
+/**
+ * The event's one link and the lines of its description: the annotation's
+ * link until kick-off (while the time is not set, until the end of the day),
+ * then the match's page. The description shows that link too, as some
+ * calendar apps leave the link of a subscribed calendar out.
+ */
+export function eventLinks(
+  f: Fixture,
+  note: Annotation | undefined,
+  start: Date | null,
+  now: Date,
+  timezone: string,
+): { url: string | null; lines: string[] } {
+  const lines = note?.lines ?? [];
+  const before = start ? now < start : localDate(now, timezone) <= f.date;
+  if (before && note?.url) return { url: note.url, lines: [...lines, note.url] };
+  return { url: f.url, lines: f.url ? [...lines, FEED.matchPage(f.url)] : lines };
+}
+
 function event(f: Fixture, meta: FeedMeta, now: Date, extras: FeedExtras): string[] {
   const note = extras.annotations?.get(f.date);
   const start = kickoff(f, meta.timezone);
@@ -93,7 +112,7 @@ function event(f: Fixture, meta: FeedMeta, now: Date, extras: FeedExtras): strin
     : // The day is set, the time is not yet: an all-day event until it is.
       [`DTSTART;VALUE=DATE:${dateValue(f.date)}`, `DTEND;VALUE=DATE:${dateValue(addDays(f.date, 1))}`];
   // The competition, the score and who is at home (named first) are in the title already.
-  const info = [...(note?.lines ?? []), note?.url ?? ""].filter(Boolean);
+  const { url, lines } = eventLinks(f, note, start, now, meta.timezone);
   return [
     "BEGIN:VEVENT",
     `UID:${f.source}-${f.id}@fixtical`,
@@ -101,8 +120,8 @@ function event(f: Fixture, meta: FeedMeta, now: Date, extras: FeedExtras): strin
     ...when,
     `SUMMARY:${escapeText(summary(f))}`,
     ...locationLines(f.venue, extras.places?.get(f.venue)),
-    ...(info.length ? [`DESCRIPTION:${escapeText(info.join("\n"))}`] : []),
-    ...(f.url ? [`URL:${f.url}`] : []),
+    ...(lines.length ? [`DESCRIPTION:${escapeText(lines.join("\n"))}`] : []),
+    ...(url ? [`URL:${url}`] : []),
     "END:VEVENT",
   ];
 }
@@ -116,7 +135,7 @@ function staleEvent(meta: FeedMeta, since: string, now: Date): string[] {
     `DTSTAMP:${utcStamp(now)}`,
     `DTSTART;VALUE=DATE:${dateValue(today)}`,
     `DTEND;VALUE=DATE:${dateValue(addDays(today, 1))}`,
-    `SUMMARY:${escapeText(stale(localDate(new Date(since), meta.timezone)))}`,
+    `SUMMARY:${escapeText(FEED.stale(localDate(new Date(since), meta.timezone)))}`,
     "END:VEVENT",
   ];
 }
@@ -144,12 +163,4 @@ export function buildIcs(
     "END:VCALENDAR",
   ];
   return `${lines.map(foldLine).join("\r\n")}\r\n`;
-}
-
-/** The feed without its generation time: what decides whether it changed. */
-export function feedContent(ics: string): string {
-  return ics
-    .split("\r\n")
-    .filter((line) => !line.startsWith("DTSTAMP:"))
-    .join("\r\n");
 }

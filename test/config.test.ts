@@ -27,7 +27,6 @@ describe("configuration", () => {
           category: "men",
           competition: null,
           include: { league: true, cup: true },
-          gist: true,
         },
       ],
     });
@@ -44,7 +43,6 @@ calendars:
     category: futsal
     competition: "NB I"
     include: [league]
-    gist: false
 `);
     expect(config.calendars[0]).toMatchObject({
       slug: "ujpest-futsal",
@@ -52,7 +50,6 @@ calendars:
       category: "futsal",
       competition: "NB I",
       include: { league: true, cup: false },
-      gist: false,
     });
   });
 
@@ -87,7 +84,6 @@ calendars:
     competition: "("
     color: purple
     include: [friendly]
-    gist: "no"
     slug: "Not OK"
     wat: 1
   - team_url: http://example.com
@@ -100,7 +96,6 @@ calendars:
       "calendars[0].competition: not a valid regular expression",
       "calendars[0].color: expected #rrggbb",
       "calendars[0].include: a list of league and/or cup",
-      "calendars[0].gist: true or false",
       "calendars[0].slug: lowercase letters, digits and dashes",
       "calendars[1].team_url: expected an https link",
     ]);
@@ -119,6 +114,24 @@ calendars:
       'calendars[0]: unknown key "name"',
     ]);
     expect(problems("calendars:\n  - 3\n")).toEqual(["calendars[0]: expected a mapping"]);
+  });
+
+  it("checks the source and the settings it needs", () => {
+    expect(
+      problems(`calendars:
+  - source: other
+    club: 1
+  - team_url: https://example.com/team
+  - source: mvlsz
+    team: UVSE
+    category: youth
+`),
+    ).toEqual([
+      "calendars[0].source: one of mlsz, mvlsz, mrsz",
+      "calendars[1].team_url: not a team page link of this source",
+      "calendars[2].club: required for this source",
+      "calendars[2].category: men or women for this source",
+    ]);
   });
 
   it("reports invalid YAML", () => {

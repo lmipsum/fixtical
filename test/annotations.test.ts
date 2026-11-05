@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   type Annotations,
   addAnnotations,
+  collectNotes,
   dispatchedNote,
-  producerOf,
   updatedAt,
 } from "../src/annotations.ts";
 
@@ -123,9 +123,29 @@ describe("annotations", () => {
       producer: "ticket-watch",
       text: '{"calendars":{}}',
     });
-    expect(producerOf("annotations-ticket-watch.json")).toBe("ticket-watch");
-    expect(producerOf("annotations.json")).toBe("annotations.json");
     expect(updatedAt('{"updated_at": "2026-11-04T08:00:00Z"}')).toBe(Date.parse("2026-11-04T08:00:00Z"));
     expect(updatedAt("{")).toBeNaN();
+  });
+});
+
+describe("collectNotes", () => {
+  const day = { "2026-11-08": { lines: ["x"] } };
+
+  it("lets a dispatch replace its producer's kept file and drops files too old to keep", () => {
+    const kept = {
+      b: file({ ujpest: day }, "2026-11-03T07:00:00Z"),
+      old: file({ ujpest: day }, "2026-11-01T07:00:00Z"),
+    };
+    const dispatch = JSON.stringify({ producer: "b", annotations: JSON.parse(file({ uvse: day })) });
+    const { annotations, notes, problems } = collectNotes(kept, dispatch, NOW);
+    expect([...annotations.keys()]).toEqual(["uvse"]);
+    expect(Object.keys(notes)).toEqual(["b"]);
+    expect(problems).toEqual(["sent by old: older than the allowed age, skipped"]);
+  });
+
+  it("reports a dispatch it cannot read and keeps the rest", () => {
+    const { notes, problems } = collectNotes({ a: file({ ujpest: day }) }, "{", NOW);
+    expect(Object.keys(notes)).toEqual(["a"]);
+    expect(problems).toEqual(["dispatch: not valid JSON"]);
   });
 });

@@ -1,7 +1,4 @@
-import type { CalendarResult } from "../build.ts";
-import { feedContent } from "../formats/ics.ts";
 import { defaultFetch, type FetchLike } from "../http.ts";
-import { STATE_FILE, type State } from "../state.ts";
 
 const API = "https://api.github.com/gists";
 
@@ -74,34 +71,4 @@ export class Gist {
     const body = Object.fromEntries(Object.entries(files).map(([name, content]) => [name, { content }]));
     await this.call("PATCH", JSON.stringify({ files: body }));
   }
-}
-
-function withoutTimestamp(json: string | undefined): string {
-  if (!json) return "";
-  try {
-    const { generated_at: _, ...rest } = JSON.parse(json) as Record<string, unknown>;
-    return JSON.stringify(rest);
-  } catch {
-    return "";
-  }
-}
-
-/** The files whose content changed, by name: generation times alone do not count. */
-export function changedFiles(
-  existing: ReadonlyMap<string, string>,
-  results: readonly CalendarResult[],
-  state: State,
-): Record<string, string> {
-  const files: Record<string, string> = {};
-  for (const r of results) {
-    if (!r.ics || !r.json) continue;
-    const json = `${JSON.stringify(r.json, null, 2)}\n`;
-    const ics = `${r.slug}.ics`;
-    const jsonName = `${r.slug}.json`;
-    if (feedContent(existing.get(ics) ?? "") !== feedContent(r.ics)) files[ics] = r.ics;
-    if (withoutTimestamp(existing.get(jsonName)) !== withoutTimestamp(json)) files[jsonName] = json;
-  }
-  const stateText = `${JSON.stringify(state)}\n`;
-  if ((existing.get(STATE_FILE) ?? "") !== stateText) files[STATE_FILE] = stateText;
-  return files;
 }

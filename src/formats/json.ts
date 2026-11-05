@@ -1,7 +1,6 @@
-import type { Annotation } from "../annotations.ts";
+import { type Place, placeAddress } from "../geocode.ts";
 import { type Fixture, kickoff } from "../model.ts";
 import { teamName } from "../team-names.ts";
-import type { FeedExtras } from "./ics.ts";
 
 /** Version of the JSON output's shape; raised on any incompatible change. */
 export const JSON_SCHEMA = 1;
@@ -28,8 +27,6 @@ export interface JsonFeed {
     competition: string;
     result: string | null;
     url: string | null;
-    /** Lines and a link added by another tool for the match day. */
-    annotation: Annotation | null;
   }[];
 }
 
@@ -41,7 +38,7 @@ export function buildJson(
   team: string | null,
   fixtures: readonly Fixture[],
   now: Date,
-  extras: FeedExtras = {},
+  places: ReadonlyMap<string, Place> = new Map(),
 ): JsonFeed {
   return {
     schema: JSON_SCHEMA,
@@ -50,7 +47,7 @@ export function buildJson(
     timezone,
     generated_at: now.toISOString(),
     fixtures: fixtures.map((f) => {
-      const place = extras.places?.get(f.venue);
+      const place = places.get(f.venue);
       return {
         source: f.source,
         id: f.id,
@@ -61,13 +58,10 @@ export function buildJson(
         away: teamName(f.away),
         at_home: team === f.home ? true : team === f.away ? false : null,
         venue: f.venue,
-        location: place
-          ? { address: [place.street, place.town].filter(Boolean).join(", "), lat: place.lat, lon: place.lon }
-          : null,
+        location: place ? { address: placeAddress(place), lat: place.lat, lon: place.lon } : null,
         competition: f.competition,
         result: f.result,
         url: f.url,
-        annotation: extras.annotations?.get(f.date) ?? null,
       };
     }),
   };

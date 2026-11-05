@@ -6,12 +6,21 @@ import { foundPlaces, type Geocoder } from "./geocode.ts";
 import { type Client, SourceError } from "./http.ts";
 import type { Fixture } from "./model.ts";
 import { SOURCES } from "./sources/index.ts";
+import type { SourceContext } from "./sources/types.ts";
 import type { CalendarState, State } from "./state.ts";
 import { ownTeam, teamName } from "./team-names.ts";
 import { TIMEZONE } from "./time.ts";
 
 /** A source failing this long puts a "not updated since" event into the feed. */
 export const STALE_AFTER_MS = 2 * 86400 * 1000;
+
+/** How often the sources are read: every six hours, a quarter less for a late schedule. */
+export const FETCH_EVERY_MS = (6 * 60 - 15) * 60 * 1000;
+
+/** Whether the sources are due to be read again. */
+export function fetchDue(state: State, now: Date): boolean {
+  return !state.fetchedAt || now.getTime() - Date.parse(state.fetchedAt) >= FETCH_EVERY_MS;
+}
 
 export interface CalendarResult {
   slug: string;
@@ -23,6 +32,8 @@ export interface CalendarResult {
   error: string | null;
   /** Whether the previous build could not read the source either. */
   wasFailing: boolean;
+  /** Whether this build read the source; else it used the fixtures read last. */
+  fetched: boolean;
   fixtures: Fixture[];
   updatedAt: string | null;
   /** Null when there is nothing to publish (the source has never been read). */
@@ -36,22 +47,21 @@ export interface BuildOptions {
   geocoder?: Geocoder | null;
   /** API keys of the sources that need one, by source name. */
   keys?: Readonly<Record<string, string | undefined>>;
+  /** False: only calendars never read are read; the others use their last fixtures. */
+  fetch?: boolean;
 }
 
 async function fetchCalendar(
   cal: CalendarConfig,
   previous: CalendarState | undefined,
-  client: Client,
-  keys: BuildOptions["keys"],
+  ctx: SourceContext,
 ): Promise<{ resolved: CalendarState["resolved"]; fixtures: Fixture[] }> {
+  // The configuration has checked the source and its settings.
   const source = SOURCES.get(cal.source);
-  if (!source) throw new SourceError("bad_response", `unknown source "${cal.source}"`);
-  const problems = source.validate(cal);
-  if (problems.length) throw new SourceError("bad_response", problems.join("; "));
-  const ctx = { client, pages: new Map<string, string>(), keys };
+  if (!source) throw new SourceError(`unknown source "${cal.source}"`);
   const resolved = await source.resolve(cal, previous?.resolved ?? null, ctx);
   const fixtures = await source.fixtures(resolved, ctx);
-  if (!fixtures.length) throw new SourceError("bad_response", "no fixtures found");
+  if (!fixtures.length) throw new SourceError("no fixtures found");
   return { resolved, fixtures };
 }
 
@@ -59,13 +69,12 @@ async function fetchCalendar(
 async function refresh(
   cal: CalendarConfig,
   previous: CalendarState | undefined,
-  client: Client,
+  ctx: SourceContext,
   now: Date,
-  keys: BuildOptions["keys"],
 ): Promise<{ entry: CalendarState; error: string | null }> {
   const entry = previous ?? { resolved: null, fixtures: [], updatedAt: null, failingSince: null };
   try {
-    const { resolved, fixtures } = await fetchCalendar(cal, previous, client, keys);
+    const { resolved, fixtures } = await fetchCalendar(cal, previous, ctx);
     const changed = JSON.stringify(previous?.fixtures) !== JSON.stringify(fixtures);
     return {
       entry: {
@@ -91,10 +100,15 @@ export async function build(
   now: Date,
   options: BuildOptions = {},
 ): Promise<{ results: CalendarResult[]; state: State }> {
+  // One page cache for every calendar: calendars of one club read its pages once.
+  const ctx: SourceContext = { client, pages: new Map(), keys: options.keys };
+  const fetch = options.fetch ?? true;
   const refreshed = [];
   for (const cal of config.calendars) {
     const previous = state.calendars[cal.slug];
-    refreshed.push({ cal, previous, ...(await refresh(cal, previous, client, now, options.keys)) });
+    const read = fetch || !previous;
+    const update = read ? await refresh(cal, previous, ctx, now) : { entry: previous, error: null };
+    refreshed.push({ cal, previous, fetched: read, ...update });
   }
 
   // Venues of every calendar at once: a venue shared by calendars is looked up once.
@@ -106,9 +120,10 @@ export async function build(
     : state.places;
   const places = foundPlaces(placeCache);
 
-  const next: State = { schema: 1, calendars: {}, places: placeCache };
+  const fetchedAt = fetch ? now.toISOString() : state.fetchedAt;
+  const next: State = { schema: 1, calendars: {}, places: placeCache, ...(fetchedAt ? { fetchedAt } : {}) };
   const results: CalendarResult[] = [];
-  for (const { cal, previous, entry, error } of refreshed) {
+  for (const { cal, previous, fetched, entry, error } of refreshed) {
     next.calendars[cal.slug] = entry;
     const team = ownTeam(entry.fixtures);
     const name = team ? teamName(team) : cal.slug;
@@ -129,10 +144,11 @@ export async function build(
       category: cal.category,
       error,
       wasFailing: !!previous?.failingSince,
+      fetched,
       fixtures: entry.fixtures,
       updatedAt: entry.updatedAt,
       ics: has ? buildIcs(meta, entry.fixtures, now, extras) : null,
-      json: has ? buildJson(cal.slug, name, TIMEZONE, team, entry.fixtures, now, extras) : null,
+      json: has ? buildJson(cal.slug, name, TIMEZONE, team, entry.fixtures, now, places) : null,
     });
   }
   return { results, state: next };

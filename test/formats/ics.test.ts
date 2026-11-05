@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildIcs,
-  escapeText,
-  feedContent,
-  foldLine,
-  locationLines,
-  summary,
-} from "../../src/formats/ics.ts";
+import { buildIcs, escapeText, eventLinks, foldLine, locationLines, summary } from "../../src/formats/ics.ts";
 import { makeFixture } from "../helpers.ts";
 
 const META = {
@@ -50,6 +43,7 @@ describe("iCalendar", () => {
     expect(ics).toContain("SUMMARY:Újpest FC 4:2 DVSC | OTP Bank Liga");
     expect(ics).not.toContain("Eredmény");
     expect(ics).toContain("URL:https://adatbank.mlsz.hu/match/1.html");
+    expect(ics).toContain("DESCRIPTION:Adatlap: https://adatbank.mlsz.hu/match/1.html");
     expect(ics).toContain("DTSTART;VALUE=DATE:20270522");
     expect(ics).toContain("DTEND;VALUE=DATE:20270523");
     expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);
@@ -58,13 +52,6 @@ describe("iCalendar", () => {
   it("leaves out the colour when there is none", () => {
     const ics = buildIcs({ ...META, color: null }, [], NOW);
     expect(ics).not.toContain("X-APPLE-CALENDAR-COLOR");
-  });
-
-  it("compares feeds without their generation time", () => {
-    const a = buildIcs(META, [makeFixture()], NOW);
-    const b = buildIcs(META, [makeFixture()], new Date("2026-11-04T08:00:00Z"));
-    expect(a).not.toBe(b);
-    expect(feedContent(a)).toBe(feedContent(b));
   });
 });
 
@@ -80,13 +67,49 @@ describe("stale feed", () => {
 describe("annotations in the feed", () => {
   it("adds the lines and the link of the match day to the description", () => {
     const notes = new Map([
-      ["2026-08-02", { lines: ["Away tickets on sale"], url: "https://tickets.example/1" }],
+      ["2026-11-08", { lines: ["Away tickets on sale"], url: "https://tickets.example/1" }],
     ]);
-    const ics = buildIcs(META, [makeFixture(), makeFixture({ id: "2", date: "2026-08-09" })], NOW, {
-      annotations: notes,
-    });
+    const fixtures = [
+      makeFixture({ date: "2026-11-08", url: "https://adatbank.mlsz.hu/match/1.html" }),
+      makeFixture({ id: "2", date: "2026-11-15" }),
+    ];
+    const ics = buildIcs(META, fixtures, NOW, { annotations: notes });
     expect(ics).toContain("DESCRIPTION:Away tickets on sale\\nhttps://tickets.example/1");
+    expect(ics).toContain("URL:https://tickets.example/1");
     expect(ics.match(/Away tickets/g)).toHaveLength(1);
+  });
+});
+
+describe("the event's link", () => {
+  const TZ = "Europe/Budapest";
+  const match = "https://adatbank.mlsz.hu/match/1.html";
+  const note = { lines: ["Away tickets on sale"], url: "https://tickets.example/1" };
+  const f = makeFixture({ date: "2026-11-08", time: "18:00", url: match });
+  const start = new Date("2026-11-08T17:00:00Z");
+
+  it("is the annotation's link until kick-off, then the match's page", () => {
+    expect(eventLinks(f, note, start, new Date("2026-11-08T16:59:00Z"), TZ)).toEqual({
+      url: note.url,
+      lines: ["Away tickets on sale", note.url],
+    });
+    expect(eventLinks(f, note, start, start, TZ)).toEqual({
+      url: match,
+      lines: ["Away tickets on sale", `Adatlap: ${match}`],
+    });
+  });
+
+  it("is the annotation's link until the end of the day while the time is not set", () => {
+    const day = makeFixture({ date: "2026-11-08", time: null, url: match });
+    expect(eventLinks(day, note, null, new Date("2026-11-08T22:59:00Z"), TZ).url).toBe(note.url);
+    expect(eventLinks(day, note, null, new Date("2026-11-08T23:00:00Z"), TZ).url).toBe(match);
+  });
+
+  it("is the match's page without an annotation link, and none without either", () => {
+    expect(eventLinks(f, { lines: ["x"], url: null }, start, NOW, TZ)).toEqual({
+      url: match,
+      lines: ["x", `Adatlap: ${match}`],
+    });
+    expect(eventLinks(makeFixture(), undefined, null, NOW, TZ)).toEqual({ url: null, lines: [] });
   });
 });
 

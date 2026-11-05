@@ -20,12 +20,6 @@ export function teamName(name: string): string {
     .join("");
 }
 
-/** The calendar team's own name, readable: see ownTeam(). */
-export function ownTeamName(fixtures: readonly Fixture[]): string | null {
-  const own = ownTeam(fixtures);
-  return own === null ? null : teamName(own);
-}
-
 /** The calendar team's own name as the source writes it: the one team in every fixture, else the most frequent. */
 export function ownTeam(fixtures: readonly Fixture[]): string | null {
   const counts = new Map<string, number>();

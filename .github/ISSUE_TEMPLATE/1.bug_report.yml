@@ -44,7 +44,6 @@ body:
       label: Where the calendar is published
       options:
         - GitHub Pages
-        - Gist
         - Locally, from the command line
     validations:
       required: true

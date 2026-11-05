@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ownTeamName, teamName } from "../src/team-names.ts";
+import { ownTeam, teamName } from "../src/team-names.ts";
 import { makeFixture } from "./helpers.ts";
 
 describe("team names", () => {
@@ -17,7 +17,7 @@ describe("team names", () => {
       makeFixture({ home: "ÚJPEST FC", away: "DVSC" }),
       makeFixture({ home: "PAKSI FC", away: "ÚJPEST FC" }),
     ];
-    expect(ownTeamName(list)).toBe("Újpest FC");
-    expect(ownTeamName([])).toBeNull();
+    expect(ownTeam(list)).toBe("ÚJPEST FC");
+    expect(ownTeam([])).toBeNull();
   });
 });

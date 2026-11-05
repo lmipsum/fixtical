@@ -1,7 +1,8 @@
 import type { CalendarConfig } from "../config.ts";
 import { SourceError } from "../http.ts";
-import type { Fixture } from "../model.ts";
+import { byKickoff, type Fixture } from "../model.ts";
 import { localDate, localTime } from "../time.ts";
+import { competitionPattern, isCup, page } from "./common.ts";
 import type { Resolved, Source, SourceContext } from "./types.ts";
 
 const API = "https://ivr.waterpolo.hu/api/public";
@@ -44,28 +45,21 @@ type MvlszResolved = Resolved & {
   teams: Entry[];
 };
 
-export function isCup(competition: string): boolean {
-  return /kupa/i.test(competition);
-}
-
 async function api(ctx: SourceContext, path: string, what: string): Promise<unknown> {
   const key = ctx.keys?.mvlsz;
-  if (!key) throw new SourceError("bad_response", "FIXTICAL_MVLSZ_KEY is not set");
-  const url = `${API}/${path}`;
-  const cached = ctx.pages.get(url);
-  const body = cached ?? (await ctx.client.text(url, what, undefined, { "X-AUTH-API-KEY": key }));
-  ctx.pages.set(url, body);
+  if (!key) throw new SourceError("FIXTICAL_MVLSZ_KEY is not set");
+  const body = await page(ctx, `${API}/${path}`, what, undefined, { "X-AUTH-API-KEY": key });
   try {
     return JSON.parse(body);
   } catch {
-    throw new SourceError("bad_response", `${what}: not JSON`);
+    throw new SourceError(`${what}: not JSON`);
   }
 }
 
 /** The club's competition entries of its newest season that fit the calendar, cups after leagues. */
 export function pickTeams(entries: readonly CompetitionTeam[], cal: CalendarConfig): MvlszResolved | null {
   const gender = GENDERS[cal.category as keyof typeof GENDERS];
-  const competition = cal.competition ? new RegExp(cal.competition, "iu") : null;
+  const competition = competitionPattern(cal);
   const fits = entries.filter((e) => {
     const c = e.competition;
     if (!c || c.gender !== gender || (competition && !competition.test(c.name))) return false;
@@ -117,7 +111,7 @@ function isMvlszResolved(value: Resolved | null): value is Resolved & MvlszResol
 
 function list<T>(data: unknown, what: string): T[] {
   const items = (data as { data?: unknown })?.data ?? data;
-  if (!Array.isArray(items)) throw new SourceError("bad_response", `${what}: missing`);
+  if (!Array.isArray(items)) throw new SourceError(`${what}: missing`);
   return items as T[];
 }
 
@@ -153,11 +147,11 @@ export const mvlsz: Source = {
     if (picked) return picked;
     // Between seasons the club may list nothing that fits yet: keep last season's teams.
     if (isMvlszResolved(cached) && cached.key === settingsKey(cal)) return cached;
-    throw new SourceError("bad_response", `club ${cal.club}: no ${cal.category} team found`);
+    throw new SourceError(`club ${cal.club}: no ${cal.category} team found`);
   },
 
   async fixtures(resolved, ctx) {
-    if (!isMvlszResolved(resolved)) throw new SourceError("bad_response", "teams not resolved");
+    if (!isMvlszResolved(resolved)) throw new SourceError("teams not resolved");
     const fixtures: Fixture[] = [];
     for (const team of resolved.teams) {
       for (const game of await games(ctx, team.competition)) {
@@ -167,6 +161,6 @@ export const mvlsz: Source = {
         if (fixture) fixtures.push(fixture);
       }
     }
-    return fixtures.sort((a, b) => `${a.date} ${a.time ?? ""}`.localeCompare(`${b.date} ${b.time ?? ""}`));
+    return fixtures.sort(byKickoff);
   },
 };

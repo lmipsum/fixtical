@@ -1,3 +1,5 @@
+import { COLOR_RE } from "../config.ts";
+import { PAGE } from "../texts.ts";
 import { APPLE_ICON, GOOGLE_ICON } from "./icons.ts";
 
 export interface FeedLink {
@@ -12,18 +14,11 @@ export interface FeedLink {
   category?: string;
 }
 
-const SECTIONS: Record<string, string> = {
-  mlsz: "Labdarúgás – MLSZ adatbank",
-  "mlsz-futsal": "Futsal – MLSZ adatbank",
-  mvlsz: "Vízilabda – MVLSZ adatbank",
-  mrsz: "Röplabda – MRSZ",
-};
-
 /** The section a feed is listed under: its source, futsal apart from football. */
 export function sectionOf(feed: FeedLink): string {
   const source = feed.source ?? "";
   const futsal = source === "mlsz" && /futsal/.test(feed.category ?? "");
-  return SECTIONS[futsal ? "mlsz-futsal" : source] ?? source;
+  return PAGE.sections[futsal ? "mlsz-futsal" : source] ?? source;
 }
 
 /** The competitions of some matches, the one with the most matches first. */
@@ -33,8 +28,6 @@ export function competitionsOf(fixtures: readonly { competition: string }[]): st
     if (f.competition) counts.set(f.competition, (counts.get(f.competition) ?? 0) + 1);
   return [...counts].sort((a, b) => b[1] - a[1]).map(([name]) => name);
 }
-
-const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 /** Black or white, whichever reads better on `color`. */
 export function textOn(color: string): string {
@@ -48,15 +41,6 @@ export interface PageOptions {
   /** Address the page is published at; without it the page links the files only. */
   siteUrl?: string;
 }
-
-const WORDS = {
-  title: "Meccsnaptárak",
-  intro: "Iratkozz fel egy naptárra: a meccsek és a változások maguktól frissülnek a naptáradban.",
-  apple: "Feliratkozás – iPhone / Mac",
-  google: "Feliratkozás – Google Naptár",
-  address: "Cím más naptárhoz:",
-  file: "Naptárfájl",
-};
 
 function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -79,7 +63,7 @@ export function indexHtml(feeds: readonly FeedLink[], options: PageOptions = {})
       : "";
     const name = `      <h3>${escapeHtml(f.name)}</h3>${covers}`;
     if (!base) {
-      return `    <li>\n${name}\n      <p><a href="${escapeHtml(f.slug)}.ics">${WORDS.file}</a></p>\n    </li>`;
+      return `    <li>\n${name}\n      <p><a href="${escapeHtml(f.slug)}.ics">${PAGE.file}</a></p>\n    </li>`;
     }
     const url = `${base}${f.slug}.ics`;
     const { webcal, google } = subscribeLinks(url);
@@ -88,9 +72,9 @@ export function indexHtml(feeds: readonly FeedLink[], options: PageOptions = {})
     return [
       `    <li${style}>`,
       name,
-      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${WORDS.apple}</span></a>`,
-      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${WORDS.google}</span></a></p>`,
-      `      <p class="address">${WORDS.address} <code>${escapeHtml(url)}</code></p>`,
+      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${PAGE.apple}</span></a>`,
+      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${PAGE.google}</span></a></p>`,
+      `      <p class="address">${PAGE.address} <code>${escapeHtml(url)}</code></p>`,
       "    </li>",
     ].join("\n");
   };
@@ -111,7 +95,7 @@ export function indexHtml(feeds: readonly FeedLink[], options: PageOptions = {})
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${WORDS.title}</title>
+  <title>${PAGE.title}</title>
   <style>
     :root { color-scheme: light dark; --fg: #1d1d1f; --bg: #fff; --muted: #6e6e73; --accent: #0a66c2; --line: #d2d2d7; }
     @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --bg: #1c1c1e; --muted: #a1a1a6; --accent: #4da3ff; --line: #3a3a3c; } }
@@ -130,8 +114,8 @@ export function indexHtml(feeds: readonly FeedLink[], options: PageOptions = {})
   </style>
 </head>
 <body>
-  <h1>${WORDS.title}</h1>
-  <p>${WORDS.intro}</p>
+  <h1>${PAGE.title}</h1>
+  <p>${PAGE.intro}</p>
 ${body}
 </body>
 </html>
