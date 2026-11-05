@@ -37,17 +37,6 @@ describe("build", () => {
     expect(results[0]).toMatchObject({ error: "season list: TypeError", ics: null, json: null });
   });
 
-  it("reports an unknown source or a bad link per calendar", async () => {
-    const config = loadConfig(
-      "calendars:\n  - source: other\n    club: 1\n  - team_url: https://example.com/team\n",
-    );
-    const { results } = await build(config, emptyState(), fakeClient([]).client, NOW);
-    expect(results.map((r) => r.error)).toEqual([
-      'unknown source "other"',
-      "team_url: not a team page link of this source",
-    ]);
-  });
-
   it("reads a page once for every calendar that needs it", async () => {
     const config = loadConfig(`calendars:
   - club: 14374

@@ -116,6 +116,24 @@ calendars:
     expect(problems("calendars:\n  - 3\n")).toEqual(["calendars[0]: expected a mapping"]);
   });
 
+  it("checks the source and the settings it needs", () => {
+    expect(
+      problems(`calendars:
+  - source: other
+    club: 1
+  - team_url: https://example.com/team
+  - source: mvlsz
+    team: UVSE
+    category: youth
+`),
+    ).toEqual([
+      "calendars[0].source: one of mlsz, mvlsz, mrsz",
+      "calendars[1].team_url: not a team page link of this source",
+      "calendars[2].club: required for this source",
+      "calendars[2].category: men or women for this source",
+    ]);
+  });
+
   it("reports invalid YAML", () => {
     expect(problems("calendars: [")[0]).toMatch(/not valid YAML/);
   });

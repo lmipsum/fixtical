@@ -9743,151 +9743,6 @@ function prevElementSibling(element) {
   return prev;
 }
 
-// src/config.ts
-var import_yaml = __toESM(require_dist(), 1);
-import { readFile } from "node:fs/promises";
-var CATEGORIES = ["men", "women", "futsal", "women-futsal", "youth"];
-var ConfigError = class extends Error {
-  problems;
-  constructor(problems) {
-    super(`invalid configuration:
-  ${problems.join("\n  ")}`);
-    this.name = "ConfigError";
-    this.problems = problems;
-  }
-};
-var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
-var COLOR_RE = /^#[0-9a-fA-F]{6}$/;
-var CALENDAR_KEYS = /* @__PURE__ */ new Set([
-  "source",
-  "slug",
-  "color",
-  "team_url",
-  "team",
-  "club",
-  "federation",
-  "category",
-  "competition",
-  "include"
-]);
-function defaultSlug(teamUrl, club, team, category) {
-  if (teamUrl) return `team-${/(\d+)\.html$/.exec(teamUrl)?.[1] ?? "x"}`;
-  if (club === null && team)
-    return team.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "team";
-  return category === "men" ? `club-${club}` : `club-${club}-${category}`;
-}
-function calendar(raw, where, problems) {
-  if (!isRecord(raw)) {
-    problems.push(`${where}: expected a mapping`);
-    return null;
-  }
-  const before = problems.length;
-  for (const key of Object.keys(raw)) {
-    if (!CALENDAR_KEYS.has(key)) problems.push(`${where}: unknown key "${key}"`);
-  }
-  const str = (key) => {
-    const value = raw[key];
-    if (value === void 0 || value === null) return null;
-    if (typeof value !== "string" || !value.trim()) {
-      problems.push(`${where}.${key}: expected a non-empty string`);
-      return null;
-    }
-    return value.trim();
-  };
-  const int = (key) => {
-    const value = raw[key];
-    if (value === void 0 || value === null) return null;
-    if (!Number.isInteger(value) || value < 0) {
-      problems.push(`${where}.${key}: expected a non-negative integer`);
-      return null;
-    }
-    return value;
-  };
-  const source = str("source") ?? "mlsz";
-  const teamUrl = str("team_url");
-  const club = int("club");
-  const team = str("team");
-  if (!teamUrl && club === null && !team) problems.push(`${where}: set team_url, club or team`);
-  if (teamUrl && !/^https:\/\//.test(teamUrl)) problems.push(`${where}.team_url: expected an https link`);
-  const categoryRaw = str("category") ?? "men";
-  const category = CATEGORIES.includes(categoryRaw) ? categoryRaw : null;
-  if (!category) problems.push(`${where}.category: one of ${CATEGORIES.join(", ")}`);
-  const competition = str("competition");
-  if (competition) {
-    try {
-      new RegExp(competition, "iu");
-    } catch {
-      problems.push(`${where}.competition: not a valid regular expression`);
-    }
-  }
-  const color = str("color");
-  if (color && !COLOR_RE.test(color)) problems.push(`${where}.color: expected #rrggbb`);
-  let include = { league: true, cup: true };
-  if (raw.include !== void 0) {
-    const list2 = raw.include;
-    if (!Array.isArray(list2) || list2.length === 0 || !list2.every((x) => x === "league" || x === "cup")) {
-      problems.push(`${where}.include: a list of league and/or cup`);
-    } else {
-      include = { league: list2.includes("league"), cup: list2.includes("cup") };
-    }
-  }
-  const slug = str("slug") ?? defaultSlug(teamUrl, club, team, category ?? "men");
-  if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
-  if (problems.length > before || !category) return null;
-  return {
-    source,
-    slug,
-    color,
-    teamUrl,
-    team,
-    club,
-    federation: int("federation") ?? 0,
-    category,
-    competition,
-    include
-  };
-}
-function competitionPattern(cal) {
-  return cal.competition ? new RegExp(cal.competition, "iu") : null;
-}
-function loadConfig(yamlText) {
-  const problems = [];
-  let raw;
-  try {
-    raw = (0, import_yaml.parse)(yamlText);
-  } catch (e) {
-    throw new ConfigError([`fixtical.yml is not valid YAML: ${e instanceof Error ? e.message : e}`]);
-  }
-  if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
-  const list2 = raw.calendars;
-  const calendars = [];
-  if (!Array.isArray(list2) || list2.length === 0) {
-    problems.push("calendars: at least one calendar");
-  } else {
-    list2.forEach((item, i) => {
-      const cal = calendar(item, `calendars[${i}]`, problems);
-      if (cal) calendars.push(cal);
-    });
-    const seen = /* @__PURE__ */ new Set();
-    for (const cal of calendars) {
-      if (seen.has(cal.slug)) problems.push(`calendars: slug "${cal.slug}" is used twice`);
-      seen.add(cal.slug);
-    }
-  }
-  if (problems.length) throw new ConfigError(problems);
-  return { calendars };
-}
-async function readConfig(path) {
-  let yaml;
-  try {
-    yaml = await readFile(path, "utf8");
-  } catch (e) {
-    if (e.code !== "ENOENT") throw e;
-    return null;
-  }
-  return loadConfig(yaml);
-}
-
 // node_modules/boolbase/dist/index.js
 function trueFunc() {
   return true;
@@ -12926,6 +12781,9 @@ function dateTime(match) {
   const two = (s) => String(s).padStart(2, "0");
   return { date: `${y}-${two(mo)}-${two(d)}`, time: hh !== void 0 ? `${two(hh)}:${mm}` : null };
 }
+function competitionPattern(cal) {
+  return cal.competition ? new RegExp(cal.competition, "iu") : null;
+}
 
 // src/sources/mlsz.ts
 var SITE = "https://adatbank.mlsz.hu";
@@ -13308,8 +13166,6 @@ var STALE_AFTER_MS = 2 * 86400 * 1e3;
 async function fetchCalendar(cal, previous, ctx) {
   const source = SOURCES.get(cal.source);
   if (!source) throw new SourceError(`unknown source "${cal.source}"`);
-  const problems = source.validate(cal);
-  if (problems.length) throw new SourceError(problems.join("; "));
   const resolved = await source.resolve(cal, previous?.resolved ?? null, ctx);
   const fixtures = await source.fixtures(resolved, ctx);
   if (!fixtures.length) throw new SourceError("no fixtures found");
@@ -13376,6 +13232,152 @@ async function build(config, state, client, now, options = {}) {
     });
   }
   return { results, state: next };
+}
+
+// src/config.ts
+var import_yaml = __toESM(require_dist(), 1);
+import { readFile } from "node:fs/promises";
+var CATEGORIES = ["men", "women", "futsal", "women-futsal", "youth"];
+var ConfigError = class extends Error {
+  problems;
+  constructor(problems) {
+    super(`invalid configuration:
+  ${problems.join("\n  ")}`);
+    this.name = "ConfigError";
+    this.problems = problems;
+  }
+};
+var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+var COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+var CALENDAR_KEYS = /* @__PURE__ */ new Set([
+  "source",
+  "slug",
+  "color",
+  "team_url",
+  "team",
+  "club",
+  "federation",
+  "category",
+  "competition",
+  "include"
+]);
+function defaultSlug(teamUrl, club, team, category) {
+  if (teamUrl) return `team-${/(\d+)\.html$/.exec(teamUrl)?.[1] ?? "x"}`;
+  if (club === null && team)
+    return team.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "team";
+  return category === "men" ? `club-${club}` : `club-${club}-${category}`;
+}
+function calendar(raw, where, problems) {
+  if (!isRecord(raw)) {
+    problems.push(`${where}: expected a mapping`);
+    return null;
+  }
+  const before = problems.length;
+  for (const key of Object.keys(raw)) {
+    if (!CALENDAR_KEYS.has(key)) problems.push(`${where}: unknown key "${key}"`);
+  }
+  const str = (key) => {
+    const value = raw[key];
+    if (value === void 0 || value === null) return null;
+    if (typeof value !== "string" || !value.trim()) {
+      problems.push(`${where}.${key}: expected a non-empty string`);
+      return null;
+    }
+    return value.trim();
+  };
+  const int = (key) => {
+    const value = raw[key];
+    if (value === void 0 || value === null) return null;
+    if (!Number.isInteger(value) || value < 0) {
+      problems.push(`${where}.${key}: expected a non-negative integer`);
+      return null;
+    }
+    return value;
+  };
+  const source = str("source") ?? "mlsz";
+  if (!SOURCES.has(source)) problems.push(`${where}.source: one of ${[...SOURCES.keys()].join(", ")}`);
+  const teamUrl = str("team_url");
+  const club = int("club");
+  const team = str("team");
+  if (!teamUrl && club === null && !team) problems.push(`${where}: set team_url, club or team`);
+  if (teamUrl && !/^https:\/\//.test(teamUrl)) problems.push(`${where}.team_url: expected an https link`);
+  const categoryRaw = str("category") ?? "men";
+  const category = CATEGORIES.includes(categoryRaw) ? categoryRaw : null;
+  if (!category) problems.push(`${where}.category: one of ${CATEGORIES.join(", ")}`);
+  const competition = str("competition");
+  if (competition) {
+    try {
+      new RegExp(competition, "iu");
+    } catch {
+      problems.push(`${where}.competition: not a valid regular expression`);
+    }
+  }
+  const color = str("color");
+  if (color && !COLOR_RE.test(color)) problems.push(`${where}.color: expected #rrggbb`);
+  let include = { league: true, cup: true };
+  if (raw.include !== void 0) {
+    const list2 = raw.include;
+    if (!Array.isArray(list2) || list2.length === 0 || !list2.every((x) => x === "league" || x === "cup")) {
+      problems.push(`${where}.include: a list of league and/or cup`);
+    } else {
+      include = { league: list2.includes("league"), cup: list2.includes("cup") };
+    }
+  }
+  const slug = str("slug") ?? defaultSlug(teamUrl, club, team, category ?? "men");
+  if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
+  if (problems.length > before || !category) return null;
+  const cal = {
+    source,
+    slug,
+    color,
+    teamUrl,
+    team,
+    club,
+    federation: int("federation") ?? 0,
+    category,
+    competition,
+    include
+  };
+  const own = SOURCES.get(source)?.validate(cal) ?? [];
+  for (const problem of own) problems.push(`${where}.${problem}`);
+  return own.length ? null : cal;
+}
+function loadConfig(yamlText) {
+  const problems = [];
+  let raw;
+  try {
+    raw = (0, import_yaml.parse)(yamlText);
+  } catch (e) {
+    throw new ConfigError([`fixtical.yml is not valid YAML: ${e instanceof Error ? e.message : e}`]);
+  }
+  if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
+  const list2 = raw.calendars;
+  const calendars = [];
+  if (!Array.isArray(list2) || list2.length === 0) {
+    problems.push("calendars: at least one calendar");
+  } else {
+    list2.forEach((item, i) => {
+      const cal = calendar(item, `calendars[${i}]`, problems);
+      if (cal) calendars.push(cal);
+    });
+    const seen = /* @__PURE__ */ new Set();
+    for (const cal of calendars) {
+      if (seen.has(cal.slug)) problems.push(`calendars: slug "${cal.slug}" is used twice`);
+      seen.add(cal.slug);
+    }
+  }
+  if (problems.length) throw new ConfigError(problems);
+  return { calendars };
+}
+async function readConfig(path) {
+  let yaml;
+  try {
+    yaml = await readFile(path, "utf8");
+  } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+    return null;
+  }
+  return loadConfig(yaml);
 }
 
 // src/notify/ntfy.ts

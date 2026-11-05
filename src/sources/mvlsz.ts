@@ -1,8 +1,8 @@
-import { type CalendarConfig, competitionPattern } from "../config.ts";
+import type { CalendarConfig } from "../config.ts";
 import { SourceError } from "../http.ts";
 import { byKickoff, type Fixture } from "../model.ts";
 import { localDate, localTime } from "../time.ts";
-import { isCup, page } from "./common.ts";
+import { competitionPattern, isCup, page } from "./common.ts";
 import type { Resolved, Source, SourceContext } from "./types.ts";
 
 const API = "https://ivr.waterpolo.hu/api/public";

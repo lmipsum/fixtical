@@ -1,9 +1,9 @@
 import { hasAttrib, textContent } from "domutils";
-import { type CalendarConfig, type Category, competitionPattern } from "../config.ts";
+import type { CalendarConfig, Category } from "../config.ts";
 import { SourceError } from "../http.ts";
 import { byKickoff, type Fixture } from "../model.ts";
 import { fold } from "../util.ts";
-import { all, attr, dateTime, isCup, one, page, parse, text } from "./common.ts";
+import { all, attr, competitionPattern, dateTime, isCup, one, page, parse, text } from "./common.ts";
 import type { Resolved, Source, SourceContext } from "./types.ts";
 
 const SITE = "https://adatbank.mlsz.hu";

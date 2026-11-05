@@ -44,10 +44,9 @@ async function fetchCalendar(
   previous: CalendarState | undefined,
   ctx: SourceContext,
 ): Promise<{ resolved: CalendarState["resolved"]; fixtures: Fixture[] }> {
+  // The configuration has checked the source and its settings.
   const source = SOURCES.get(cal.source);
   if (!source) throw new SourceError(`unknown source "${cal.source}"`);
-  const problems = source.validate(cal);
-  if (problems.length) throw new SourceError(problems.join("; "));
   const resolved = await source.resolve(cal, previous?.resolved ?? null, ctx);
   const fixtures = await source.fixtures(resolved, ctx);
   if (!fixtures.length) throw new SourceError("no fixtures found");

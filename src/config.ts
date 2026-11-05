@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { parse as parseYaml } from "yaml";
+import { SOURCES } from "./sources/index.ts";
 import { isRecord } from "./util.ts";
 
 export const CATEGORIES = ["men", "women", "futsal", "women-futsal", "youth"] as const;
@@ -97,6 +98,7 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
   };
 
   const source = str("source") ?? "mlsz";
+  if (!SOURCES.has(source)) problems.push(`${where}.source: one of ${[...SOURCES.keys()].join(", ")}`);
   const teamUrl = str("team_url");
   const club = int("club");
   const team = str("team");
@@ -133,7 +135,7 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
   if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
 
   if (problems.length > before || !category) return null;
-  return {
+  const cal: CalendarConfig = {
     source,
     slug,
     color,
@@ -145,11 +147,10 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
     competition,
     include,
   };
-}
-
-/** A calendar's `competition` setting as a regular expression, or null without one. */
-export function competitionPattern(cal: CalendarConfig): RegExp | null {
-  return cal.competition ? new RegExp(cal.competition, "iu") : null;
+  // The source's own settings: e.g. water polo needs a club, volleyball a team.
+  const own = SOURCES.get(source)?.validate(cal) ?? [];
+  for (const problem of own) problems.push(`${where}.${problem}`);
+  return own.length ? null : cal;
 }
 
 /** The configuration from a fixtical.yml text. */

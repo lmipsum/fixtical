@@ -1,10 +1,10 @@
 import type { Element } from "domhandler";
 import { getAttributeValue, textContent } from "domutils";
-import { type CalendarConfig, competitionPattern } from "../config.ts";
+import type { CalendarConfig } from "../config.ts";
 import { SourceError } from "../http.ts";
 import { byKickoff, type Fixture } from "../model.ts";
 import { teamName } from "../team-names.ts";
-import { all, dateTime, isCup, one, page, parse, type Root, text } from "./common.ts";
+import { all, competitionPattern, dateTime, isCup, one, page, parse, type Root, text } from "./common.ts";
 import type { Resolved, Source } from "./types.ts";
 
 const SITE = "https://hvf-web.dataproject.com";

@@ -2,6 +2,7 @@ import { selectAll, selectOne } from "css-select";
 import type { AnyNode, Element } from "domhandler";
 import { getAttributeValue, textContent } from "domutils";
 import { parseDocument } from "htmlparser2";
+import type { CalendarConfig } from "../config.ts";
 import { fold } from "../util.ts";
 import type { SourceContext } from "./types.ts";
 
@@ -40,4 +41,9 @@ export function dateTime(match: RegExpExecArray): { date: string; time: string |
   const [, y, mo, d, hh, mm] = match;
   const two = (s: string | undefined) => String(s).padStart(2, "0");
   return { date: `${y}-${two(mo)}-${two(d)}`, time: hh !== undefined ? `${two(hh)}:${mm}` : null };
+}
+
+/** A calendar's `competition` setting as a regular expression, or null without one. */
+export function competitionPattern(cal: CalendarConfig): RegExp | null {
+  return cal.competition ? new RegExp(cal.competition, "iu") : null;
 }
