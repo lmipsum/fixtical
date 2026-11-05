@@ -5,10 +5,9 @@ name: calendars
 # built from the matches read last, so links that change at kick-off follow.
 # Also on a repository_dispatch of type "annotations": a tool sends its
 # annotations with it.
-# With the FIXTICAL_GIST_TOKEN and FIXTICAL_GIST_ID secrets the state, with
-# the annotations, is kept in that gist. When the output changed, it is
-# uploaded as a Pages artifact and, when the FIXTICAL_PAGES variable is "true"
-# (and Pages uses GitHub Actions as its source), deployed to GitHub Pages.
+# When the output changed, it is uploaded as a Pages artifact and, when the
+# FIXTICAL_PAGES variable is "true" (and Pages uses GitHub Actions as its
+# source), deployed to GitHub Pages.
 # Without a configuration nothing runs.
 # The secrets may be the production environment's, limited to the default
 # branch; repository secrets work as well.
@@ -64,10 +63,17 @@ jobs:
           site_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
           state_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/state.json
         env:
+          # Optional: a secret gist and a token allowed to write gists keep the state with the
+          # annotations between builds; without them annotations last until the next build.
           FIXTICAL_GIST_TOKEN: ${{ secrets.FIXTICAL_GIST_TOKEN }}
           FIXTICAL_GIST_ID: ${{ secrets.FIXTICAL_GIST_ID }}
+          # Optional: an ntfy topic name (not its address), told when a calendar stops updating
+          # and when it recovers.
           FIXTICAL_NTFY_TOPIC: ${{ secrets.FIXTICAL_NTFY_TOPIC }}
+          # Optional: a Google Maps Platform key restricted to the Places API (New), for venue
+          # addresses with house numbers; without it they come from OpenStreetMap.
           FIXTICAL_GOOGLE_MAPS_KEY: ${{ secrets.FIXTICAL_GOOGLE_MAPS_KEY }}
+          # Required by water polo calendars (source: mvlsz): the water polo data bank's API key.
           FIXTICAL_MVLSZ_KEY: ${{ secrets.FIXTICAL_MVLSZ_KEY }}
       - if: steps.feeds.outputs.changed == 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
