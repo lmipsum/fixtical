@@ -91,6 +91,18 @@ describe("action", () => {
     expect(lines).toContain("::error title=fixtical.yml::calendars[0]: set team_url, club or team");
   });
 
+  it("takes the configuration from FIXTICAL_CONFIG in place of the file", async () => {
+    const e = await env(
+      { FIXTICAL_CONFIG: "calendars:\n  - club: 14374\n    slug: from-variable\n" },
+      "not: [valid",
+    );
+    expect(await run(e, fakeClient(UJPEST_ROUTES).client, services().fetchFn)).toBe(0);
+    expect(await readFile(join(e.INPUT_OUT, "from-variable.ics"), "utf8")).toContain("BEGIN:VEVENT");
+    const bad = await env({ FIXTICAL_CONFIG: "calendars:\n  - {}\n" });
+    expect(await run(bad, fakeClient([]).client)).toBe(1);
+    expect(lines).toContain("::error title=FIXTICAL_CONFIG::calendars[0]: set team_url, club or team");
+  });
+
   it("builds into the directory without a gist", async () => {
     const e = await env();
     expect(await run(e, fakeClient(UJPEST_ROUTES).client, services().fetchFn)).toBe(0);

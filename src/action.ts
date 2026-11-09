@@ -1,7 +1,7 @@
 import { appendFile } from "node:fs/promises";
 import { collectNotes } from "./annotations.ts";
 import { build, type CalendarResult, fetchDue } from "./build.ts";
-import { type Config, ConfigError, readConfig } from "./config.ts";
+import { type Config, ConfigError, loadConfig, readConfig } from "./config.ts";
 import { Geocoder } from "./geocode.ts";
 import { Client, defaultFetch, type FetchLike } from "./http.ts";
 import { isTopic, sendNtfy } from "./notify/ntfy.ts";
@@ -110,13 +110,16 @@ export async function run(
   const notifyTopic = topic && isTopic(topic) ? topic : null;
 
   const configPath = input(env, "config") || "fixtical.yml";
+  // The FIXTICAL_CONFIG variable, when set, takes the place of the file.
+  const configText = env.FIXTICAL_CONFIG?.trim();
+  const configName = configText ? "FIXTICAL_CONFIG" : "fixtical.yml";
   const out = input(env, "out") || "public";
   let config: Config | null;
   try {
-    config = await readConfig(configPath);
+    config = configText ? loadConfig(configText, configName) : await readConfig(configPath);
   } catch (e) {
     if (!(e instanceof ConfigError)) throw e;
-    for (const problem of e.problems) command("error", problem, "fixtical.yml");
+    for (const problem of e.problems) command("error", problem, configName);
     return 1;
   }
   if (!config) {

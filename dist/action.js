@@ -13409,13 +13409,13 @@ function calendar(raw, where, problems) {
   for (const problem of own) problems.push(`${where}.${problem}`);
   return own.length ? null : cal;
 }
-function loadConfig(yamlText) {
+function loadConfig(yamlText, name = "fixtical.yml") {
   const problems = [];
   let raw;
   try {
     raw = (0, import_yaml.parse)(yamlText);
   } catch (e) {
-    throw new ConfigError([`fixtical.yml is not valid YAML: ${e instanceof Error ? e.message : e}`]);
+    throw new ConfigError([`${name} is not valid YAML: ${e instanceof Error ? e.message : e}`]);
   }
   if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
   const list2 = raw.calendars;
@@ -13796,13 +13796,15 @@ async function run(env = process.env, client = new Client(), fetchFn = defaultFe
     command("warning", "FIXTICAL_NTFY_TOPIC is not an ntfy topic name; notifications are off.");
   const notifyTopic = topic && isTopic(topic) ? topic : null;
   const configPath = input(env, "config") || "fixtical.yml";
+  const configText = env.FIXTICAL_CONFIG?.trim();
+  const configName = configText ? "FIXTICAL_CONFIG" : "fixtical.yml";
   const out = input(env, "out") || "public";
   let config;
   try {
-    config = await readConfig(configPath);
+    config = configText ? loadConfig(configText, configName) : await readConfig(configPath);
   } catch (e) {
     if (!(e instanceof ConfigError)) throw e;
-    for (const problem of e.problems) command("error", problem, "fixtical.yml");
+    for (const problem of e.problems) command("error", problem, configName);
     return 1;
   }
   if (!config) {

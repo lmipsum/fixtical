@@ -153,14 +153,14 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
   return own.length ? null : cal;
 }
 
-/** The configuration from a fixtical.yml text. */
-export function loadConfig(yamlText: string): Config {
+/** The configuration from a YAML text; `name` is where it came from, for the messages. */
+export function loadConfig(yamlText: string, name = "fixtical.yml"): Config {
   const problems: string[] = [];
   let raw: unknown;
   try {
     raw = parseYaml(yamlText);
   } catch (e) {
-    throw new ConfigError([`fixtical.yml is not valid YAML: ${e instanceof Error ? e.message : e}`]);
+    throw new ConfigError([`${name} is not valid YAML: ${e instanceof Error ? e.message : e}`]);
   }
   if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
 
