@@ -62,7 +62,10 @@ calendars:
     expect(other).toContain("https://x.example/f/copy.ics");
     expect(other).toContain('<option value="../main/">Main</option>');
     expect(contentDigest(results, config.pages)).not.toBe(
-      contentDigest(results, [{ ...config.pages[0]!, title: "New" }]),
+      contentDigest(
+        results,
+        config.pages.map((p) => ({ ...p, title: "New" })),
+      ),
     );
     expect(contentDigest(results)).toBe(contentDigest(results, []));
   });
