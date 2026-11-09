@@ -87,7 +87,10 @@ Another tool can add lines and a link to the event of a match day with a
       "updated_at": "2026-11-03T08:00:00Z",
       "calendars": {
         "ujpest": {
-          "2026-11-08": { "label": { "hu": "Vendégjegy", "en": "Away tickets" }, "url": "https://example.com/tickets" }
+          "2026-11-08": {
+            "label": { "hu": "Vendégjegy", "en": "Away tickets" },
+            "url": "https://example.com/tickets"
+          }
         }
       }
     }
