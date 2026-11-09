@@ -7385,6 +7385,13 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// src/annotations.ts
+var ANNOTATIONS_MAX_AGE_MS = 24 * 3600 * 1e3;
+function labelIn(label, language, fallback) {
+  if (typeof label === "string") return label;
+  return label[language] ?? label[fallback] ?? Object.values(label)[0] ?? "";
+}
+
 // src/http.ts
 var SourceError = class extends Error {
   constructor(message) {
@@ -7675,6 +7682,7 @@ function ownTeam(fixtures) {
 }
 
 // src/texts.ts
+var LANGUAGE = "hu";
 var FEED = {
   stale: (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`,
   /** The match's page, named in the description. */
@@ -7746,7 +7754,10 @@ function summary(f) {
 function eventLinks(f, note, start, now, timezone) {
   const lines = note?.lines ?? [];
   const before = start ? now < start : localDate(now, timezone) <= f.date;
-  if (before && note?.url) return { url: note.url, lines: [...lines, note.url] };
+  if (before && note?.url) {
+    const label = note.label ? labelIn(note.label, LANGUAGE, LANGUAGE) : "";
+    return { url: note.url, lines: [...lines, label ? `${label}: ${note.url}` : note.url] };
+  }
   return { url: f.url, lines: f.url ? [...lines, FEED.matchPage(f.url)] : lines };
 }
 function event(f, meta, now, extras) {

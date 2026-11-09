@@ -7390,10 +7390,26 @@ var MAX_LINES = 5;
 var MAX_LINE_LENGTH = 200;
 var MAX_URL_LENGTH = 500;
 var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+var LANGUAGE_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
 function cleanLine(value) {
   if (typeof value !== "string") return null;
   const text2 = value.replace(new RegExp("\\p{Cc}", "gu"), " ").replace(/\s+/g, " ").trim();
   return text2 ? text2.slice(0, MAX_LINE_LENGTH) : null;
+}
+function cleanLabel(value) {
+  if (typeof value === "string") return cleanLine(value);
+  if (!isRecord(value)) return null;
+  const byLanguage = {};
+  for (const [language, text2] of Object.entries(value)) {
+    const clean = cleanLine(text2);
+    if (!LANGUAGE_RE.test(language) || clean === null) return null;
+    byLanguage[language] = clean;
+  }
+  return Object.keys(byLanguage).length ? byLanguage : null;
+}
+function labelIn(label, language, fallback) {
+  if (typeof label === "string") return label;
+  return label[language] ?? label[fallback] ?? Object.values(label)[0] ?? "";
 }
 function cleanUrl(value) {
   if (typeof value !== "string" || value.length > MAX_URL_LENGTH || /\s/.test(value)) return null;
@@ -7428,13 +7444,19 @@ function addAnnotations(into, text2, now, maxAgeMs) {
       const lines = Array.isArray(raw.lines) ? raw.lines.map(cleanLine).filter((l) => l !== null) : [];
       const url = raw.url === void 0 || raw.url === null ? null : cleanUrl(raw.url);
       if (raw.url && !url) problems.push(`${slug}.${date}.url: expected an https link`);
+      const label = raw.label === void 0 || raw.label === null ? null : cleanLabel(raw.label);
+      if (raw.label !== void 0 && raw.label !== null && !label) {
+        problems.push(`${slug}.${date}.label: expected a text, or texts by language`);
+      } else if (label && !url) {
+        problems.push(`${slug}.${date}.label: names no link`);
+      }
       if (!lines.length && !url) continue;
       const byDate = into.get(slug) ?? /* @__PURE__ */ new Map();
       const current = byDate.get(date) ?? { lines: [], url: null };
-      byDate.set(date, {
-        lines: [...current.lines, ...lines].slice(0, MAX_LINES),
-        url: current.url ?? url
-      });
+      const kept = current.url ? current : { url, label: url ? label : null };
+      const merged = { lines: [...current.lines, ...lines].slice(0, MAX_LINES), url: kept.url };
+      if (kept.label) merged.label = kept.label;
+      byDate.set(date, merged);
       into.set(slug, byDate);
     }
   }
@@ -7772,6 +7794,7 @@ function ownTeam(fixtures) {
 }
 
 // src/texts.ts
+var LANGUAGE = "hu";
 var FEED = {
   stale: (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`,
   /** The match's page, named in the description. */
@@ -7848,7 +7871,10 @@ function summary(f) {
 function eventLinks(f, note, start, now, timezone) {
   const lines = note?.lines ?? [];
   const before = start ? now < start : localDate(now, timezone) <= f.date;
-  if (before && note?.url) return { url: note.url, lines: [...lines, note.url] };
+  if (before && note?.url) {
+    const label = note.label ? labelIn(note.label, LANGUAGE, LANGUAGE) : "";
+    return { url: note.url, lines: [...lines, label ? `${label}: ${note.url}` : note.url] };
+  }
   return { url: f.url, lines: f.url ? [...lines, FEED.matchPage(f.url)] : lines };
 }
 function event(f, meta, now, extras) {

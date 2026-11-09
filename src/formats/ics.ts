@@ -1,8 +1,8 @@
-import type { Annotation } from "../annotations.ts";
+import { type Annotation, labelIn } from "../annotations.ts";
 import { type Place, placeAddress } from "../geocode.ts";
 import { type Fixture, kickoff } from "../model.ts";
 import { teamName } from "../team-names.ts";
-import { FEED } from "../texts.ts";
+import { FEED, LANGUAGE } from "../texts.ts";
 import { addDays, localDate } from "../time.ts";
 
 export interface FeedMeta {
@@ -100,7 +100,10 @@ export function eventLinks(
 ): { url: string | null; lines: string[] } {
   const lines = note?.lines ?? [];
   const before = start ? now < start : localDate(now, timezone) <= f.date;
-  if (before && note?.url) return { url: note.url, lines: [...lines, note.url] };
+  if (before && note?.url) {
+    const label = note.label ? labelIn(note.label, LANGUAGE, LANGUAGE) : "";
+    return { url: note.url, lines: [...lines, label ? `${label}: ${note.url}` : note.url] };
+  }
   return { url: f.url, lines: f.url ? [...lines, FEED.matchPage(f.url)] : lines };
 }
 

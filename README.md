@@ -87,7 +87,7 @@ Another tool can add lines and a link to the event of a match day with a
       "updated_at": "2026-11-03T08:00:00Z",
       "calendars": {
         "ujpest": {
-          "2026-11-08": { "lines": ["Away tickets on sale"], "url": "https://example.com/tickets" }
+          "2026-11-08": { "label": { "hu": "Vendégjegy", "en": "Away tickets" }, "url": "https://example.com/tickets" }
         }
       }
     }
@@ -99,6 +99,8 @@ Another tool can add lines and a link to the event of a match day with a
 - `lines`: plain text, at most five, 200 characters each; they go into the event's description.
 - `url`: `https`; the event's link until kick-off (to the end of the day while the time is not set), then the
   match's page.
+- `label`: names `url` in the description as `<label>: <url>`; one text, or one per language tag. The calendar
+  shows the Hungarian one, else the first one.
 - Annotations whose `updated_at` is more than 24 hours old are skipped, and a day without a match is ignored;
   `annotations` is at most 64 KB.
 

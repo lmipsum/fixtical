@@ -4,6 +4,7 @@ import {
   addAnnotations,
   collectNotes,
   dispatchedNote,
+  labelIn,
   updatedAt,
 } from "../src/annotations.ts";
 
@@ -30,6 +31,87 @@ describe("annotations", () => {
       lines: ["Away tickets on sale"],
       url: "https://tickets.example/1",
     });
+  });
+
+  it("names a link with a label, one text or one per language", () => {
+    const into: Annotations = new Map();
+    const problems = addAnnotations(
+      into,
+      file({
+        a: {
+          "2026-11-08": { label: "Jegy", url: "https://tickets.example/1" },
+          "2026-11-09": {
+            label: { hu: "Vendégjegy", en: "Away\ntickets" },
+            url: "https://tickets.example/2",
+          },
+        },
+      }),
+      NOW,
+      DAY,
+    );
+    expect(problems).toEqual([]);
+    expect(into.get("a")?.get("2026-11-08")).toEqual({
+      lines: [],
+      url: "https://tickets.example/1",
+      label: "Jegy",
+    });
+    expect(into.get("a")?.get("2026-11-09")?.label).toEqual({ hu: "Vendégjegy", en: "Away tickets" });
+  });
+
+  it("drops a label that is not text or names no link", () => {
+    const into: Annotations = new Map();
+    const problems = addAnnotations(
+      into,
+      file({
+        a: {
+          "2026-11-08": { label: { "not a language": "x" }, url: "https://tickets.example/1" },
+          "2026-11-09": { label: 3, url: "https://tickets.example/2" },
+          "2026-11-10": { lines: ["x"], label: "Jegy" },
+          "2026-11-11": { label: {}, url: "https://tickets.example/3" },
+        },
+      }),
+      NOW,
+      DAY,
+    );
+    expect(problems).toEqual([
+      "a.2026-11-08.label: expected a text, or texts by language",
+      "a.2026-11-09.label: expected a text, or texts by language",
+      "a.2026-11-10.label: names no link",
+      "a.2026-11-11.label: expected a text, or texts by language",
+    ]);
+    for (const day of ["2026-11-08", "2026-11-09", "2026-11-10", "2026-11-11"]) {
+      expect(into.get("a")?.get(day)?.label).toBeUndefined();
+    }
+  });
+
+  it("keeps the first link with its own label", () => {
+    const into: Annotations = new Map();
+    addAnnotations(into, file({ a: { "2026-11-08": { lines: ["x"] } } }), NOW, DAY);
+    addAnnotations(
+      into,
+      file({ a: { "2026-11-08": { label: "First", url: "https://one.example" } } }),
+      NOW,
+      DAY,
+    );
+    addAnnotations(
+      into,
+      file({ a: { "2026-11-08": { label: "Second", url: "https://two.example" } } }),
+      NOW,
+      DAY,
+    );
+    expect(into.get("a")?.get("2026-11-08")).toEqual({
+      lines: ["x"],
+      url: "https://one.example",
+      label: "First",
+    });
+  });
+
+  it("picks a label's language, else the fallback, else the first one", () => {
+    const label = { en: "Away tickets", hu: "Vendégjegy" };
+    expect(labelIn(label, "en", "hu")).toBe("Away tickets");
+    expect(labelIn(label, "de", "hu")).toBe("Vendégjegy");
+    expect(labelIn({ en: "Away tickets" }, "de", "hu")).toBe("Away tickets");
+    expect(labelIn("Jegy", "en", "hu")).toBe("Jegy");
   });
 
   it("keeps lines plain, short and few", () => {

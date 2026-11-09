@@ -98,6 +98,15 @@ describe("the event's link", () => {
     });
   });
 
+  it("names the annotation's link with its label, in Hungarian", () => {
+    const labelled = { lines: [], url: note.url, label: { en: "Away tickets", hu: "Vendégjegy" } };
+    expect(eventLinks(f, labelled, start, NOW, TZ)).toEqual({
+      url: note.url,
+      lines: [`Vendégjegy: ${note.url}`],
+    });
+    expect(eventLinks(f, labelled, start, start, TZ).lines).toEqual([`Adatlap: ${match}`]);
+  });
+
   it("is the annotation's link until the end of the day while the time is not set", () => {
     const day = makeFixture({ date: "2026-11-08", time: null, url: match });
     expect(eventLinks(day, note, null, new Date("2026-11-08T22:59:00Z"), TZ).url).toBe(note.url);

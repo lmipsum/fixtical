@@ -1,5 +1,8 @@
 // Every text the calendars, their page and the notifications show: they are in Hungarian.
 
+/** The language of these texts, and of the annotation labels picked for the events. */
+export const LANGUAGE = "hu";
+
 /** Texts of the events. */
 export const FEED = {
   stale: (date: string) => `A naptár nem frissült ${date} óta`,
