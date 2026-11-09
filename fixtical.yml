@@ -1,5 +1,6 @@
-# The calendars this repository builds. In a fork, change the team below:
-# either `club` (and `category`), or `team_url` with the link of the team's page.
+# The calendars this repository builds, unless the FIXTICAL_CONFIG repository
+# variable holds a configuration. In a fork, change the team below: either
+# `club` (and `category`), or `team_url` with the link of the team's page.
 # A calendar is named after the team, as the source names it.
 calendars:
   - source: mlsz
@@ -7,51 +8,3 @@ calendars:
     color: "#623A96"
     club: 14374
     category: men
-  - source: mlsz
-    slug: ujpest-ii
-    color: "#623A96"
-    club: 14374
-    category: men
-    competition: "NB III"
-    include: [league]
-  - source: mlsz
-    slug: ujpest-noi
-    color: "#623A96"
-    club: 14374
-    category: women
-  - source: mlsz
-    slug: ujpest-futsal
-    color: "#623A96"
-    club: 14374
-    category: futsal
-  - source: mlsz
-    slug: ujpest-noi-futsal
-    color: "#623A96"
-    club: 14374
-    category: women-futsal
-  - source: mvlsz
-    slug: uvse
-    color: "#4A287F"
-    club: 197
-    category: men
-  - source: mvlsz
-    slug: uvse-noi
-    color: "#4A287F"
-    club: 197
-    category: women
-  - source: mvlsz
-    slug: uvse-noi-ii
-    color: "#4A287F"
-    club: 116
-    category: women
-    competition: "OB I/B"
-  - source: mrsz
-    slug: ute-roplabda
-    color: "#42216F"
-    team: UTE
-    category: women
-  - source: mrsz
-    slug: ute-roplabda-u23
-    color: "#42216F"
-    team: UTE U23
-    category: women

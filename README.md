@@ -69,8 +69,18 @@ calendars:
 | `calendars[].category`    | `men`           | `men`, `women`, `futsal`, `women-futsal` or `youth`; water polo and volleyball: `men` or `women`. |
 | `calendars[].competition` |                 | A regular expression narrowing the competitions, e.g. `U19`.                                      |
 | `calendars[].include`     | `[league, cup]` | Leave out the cups, or the league.                                                                |
+| `calendars[].page`        |                 | The page listing the calendar: one of `pages[].slug`. Required with `pages`.                      |
+| `calendars[].enabled`     | `true`          | `false`: not built nor listed, its settings kept.                                                 |
+| `pages[].slug`            |                 | Address of the page under the site: `<slug>/`. Lowercase letters, digits and dashes.              |
+| `pages[].title`           |                 | The page's name in the switcher between the pages.                                                |
+| `pages[].default`         | the first page  | `true`: the site's main page shows it.                                                            |
+| `pages[].enabled`         | `true`          | `false`: the page and its calendars are left out.                                                 |
+| `pages[].language`        | `hu`            | `hu` or `en`: the page's texts and the texts its calendars add to the events.                     |
 
-Times are in `Europe/Budapest`, the event texts in Hungarian.
+Without `pages` one page lists every calendar. With them each page lists its own; the feeds stay at
+`<slug>.ics`, so a calendar moved to another page keeps its address.
+
+Times are in `Europe/Budapest`; the event texts are in Hungarian, or in the language of the calendar's page.
 
 ## Annotations
 
@@ -87,7 +97,10 @@ Another tool can add lines and a link to the event of a match day with a
       "updated_at": "2026-11-03T08:00:00Z",
       "calendars": {
         "ujpest": {
-          "2026-11-08": { "lines": ["Away tickets on sale"], "url": "https://example.com/tickets" }
+          "2026-11-08": {
+            "label": { "hu": "Vendégjegy", "en": "Away tickets" },
+            "url": "https://example.com/tickets"
+          }
         }
       }
     }
@@ -99,6 +112,8 @@ Another tool can add lines and a link to the event of a match day with a
 - `lines`: plain text, at most five, 200 characters each; they go into the event's description.
 - `url`: `https`; the event's link until kick-off (to the end of the day while the time is not set), then the
   match's page.
+- `label`: names `url` in the description as `<label>: <url>`; one text, or one per language tag. The calendar
+  shows the one in its page's language, else the Hungarian one, else the first one.
 - Annotations whose `updated_at` is more than 24 hours old are skipped, and a day without a match is ignored;
   `annotations` is at most 64 KB.
 

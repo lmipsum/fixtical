@@ -27,8 +27,10 @@ describe("configuration", () => {
           category: "men",
           competition: null,
           include: { league: true, cup: true },
+          page: null,
         },
       ],
+      pages: [],
     });
   });
 
@@ -132,6 +134,126 @@ calendars:
       "calendars[2].club: required for this source",
       "calendars[2].category: men or women for this source",
     ]);
+  });
+
+  it("puts calendars on pages, the default one first on the main page", () => {
+    const config = loadConfig(`
+pages:
+  - slug: ujpest
+    title: Újpest
+  - slug: bekescsaba
+    title: Békéscsaba
+    default: true
+    language: en
+calendars:
+  - club: 14374
+    slug: ujpest
+    page: ujpest
+  - club: 1
+    slug: bekescsaba
+    page: bekescsaba
+`);
+    expect(config.pages).toEqual([
+      { slug: "ujpest", title: "Újpest", isDefault: false, language: "hu" },
+      { slug: "bekescsaba", title: "Békéscsaba", isDefault: true, language: "en" },
+    ]);
+    expect(config.calendars.map((c) => c.page)).toEqual(["ujpest", "bekescsaba"]);
+  });
+
+  it("leaves out what is switched off, and moves the default to the first page shown", () => {
+    const config = loadConfig(`
+pages:
+  - slug: a
+    title: A
+    default: true
+    enabled: false
+  - slug: b
+    title: B
+  - slug: c
+    title: C
+calendars:
+  - club: 1
+    slug: a1
+    page: a
+  - club: 2
+    slug: b1
+    page: b
+  - club: 3
+    slug: b2
+    page: b
+    enabled: false
+  - club: 4
+    slug: c1
+    page: c
+    enabled: false
+`);
+    expect(config.pages).toEqual([{ slug: "b", title: "B", isDefault: true, language: "hu" }]);
+    expect(config.calendars.map((c) => c.slug)).toEqual(["b1"]);
+    expect(loadConfig("calendars:\n  - club: 1\n    enabled: false\n  - club: 2\n").calendars).toHaveLength(
+      1,
+    );
+  });
+
+  it("reports pages that do not fit together", () => {
+    expect(
+      problems(`
+pages:
+  - slug: a
+    title: A
+    default: true
+  - slug: a
+    title: Again
+    default: true
+  - slug: Bad Slug
+    other: 1
+  - slug: empty
+    title: Empty
+    enabled: "no"
+    language: de
+calendars:
+  - club: 1
+    page: a
+  - club: 2
+    page: nowhere
+  - club: 3
+`),
+    ).toEqual([
+      'pages[2]: unknown key "other"',
+      "pages[2].slug: lowercase letters, digits and dashes",
+      "pages[2].title: expected a non-empty string",
+      "pages[3].enabled: expected true or false",
+      "pages[3].language: one of hu, en",
+      'pages: slug "a" is used twice',
+      "pages: more than one default",
+      "calendars[1].page: one of a",
+      "calendars[2].page: one of a",
+    ]);
+    expect(problems("pages: [x, {slug: a, title: A}]\ncalendars:\n  - club: 1\n    page: a\n")).toEqual([
+      "pages[0]: expected a mapping",
+    ]);
+    expect(
+      problems(`pages: []
+calendars:
+  - club: 1
+`),
+    ).toEqual(["pages: a list of at least one page"]);
+    expect(
+      problems(`pages:
+  - slug: a
+    title: A
+  - slug: b
+    title: B
+calendars:
+  - club: 1
+    page: a
+`),
+    ).toEqual(["pages[1]: no calendar names it"]);
+    expect(
+      problems(`calendars:
+  - club: 1
+    page: a
+`),
+    ).toEqual(["calendars[0].page: no pages are configured"]);
   });
 
   it("reports invalid YAML", () => {

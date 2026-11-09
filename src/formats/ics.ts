@@ -1,8 +1,8 @@
-import type { Annotation } from "../annotations.ts";
+import { type Annotation, labelIn } from "../annotations.ts";
 import { type Place, placeAddress } from "../geocode.ts";
 import { type Fixture, kickoff } from "../model.ts";
 import { teamName } from "../team-names.ts";
-import { FEED } from "../texts.ts";
+import { FEED, LANGUAGE, type Language } from "../texts.ts";
 import { addDays, localDate } from "../time.ts";
 
 export interface FeedMeta {
@@ -11,6 +11,8 @@ export interface FeedMeta {
   timezone: string;
   /** Set while the source has been failing for long: the feed then says since when it is not updated. */
   staleSince: string | null;
+  /** The language of the texts the feed adds; Hungarian without one. */
+  language?: Language;
 }
 
 /** What other parts add to the events: annotations by date, places by venue. */
@@ -97,11 +99,15 @@ export function eventLinks(
   start: Date | null,
   now: Date,
   timezone: string,
+  language: Language = LANGUAGE,
 ): { url: string | null; lines: string[] } {
   const lines = note?.lines ?? [];
   const before = start ? now < start : localDate(now, timezone) <= f.date;
-  if (before && note?.url) return { url: note.url, lines: [...lines, note.url] };
-  return { url: f.url, lines: f.url ? [...lines, FEED.matchPage(f.url)] : lines };
+  if (before && note?.url) {
+    const label = note.label ? labelIn(note.label, language, LANGUAGE) : "";
+    return { url: note.url, lines: [...lines, label ? `${label}: ${note.url}` : note.url] };
+  }
+  return { url: f.url, lines: f.url ? [...lines, FEED[language].matchPage(f.url)] : lines };
 }
 
 function event(f: Fixture, meta: FeedMeta, now: Date, extras: FeedExtras): string[] {
@@ -112,7 +118,7 @@ function event(f: Fixture, meta: FeedMeta, now: Date, extras: FeedExtras): strin
     : // The day is set, the time is not yet: an all-day event until it is.
       [`DTSTART;VALUE=DATE:${dateValue(f.date)}`, `DTEND;VALUE=DATE:${dateValue(addDays(f.date, 1))}`];
   // The competition, the score and who is at home (named first) are in the title already.
-  const { url, lines } = eventLinks(f, note, start, now, meta.timezone);
+  const { url, lines } = eventLinks(f, note, start, now, meta.timezone, meta.language);
   return [
     "BEGIN:VEVENT",
     `UID:${f.source}-${f.id}@fixtical`,
@@ -135,7 +141,7 @@ function staleEvent(meta: FeedMeta, since: string, now: Date): string[] {
     `DTSTAMP:${utcStamp(now)}`,
     `DTSTART;VALUE=DATE:${dateValue(today)}`,
     `DTEND;VALUE=DATE:${dateValue(addDays(today, 1))}`,
-    `SUMMARY:${escapeText(FEED.stale(localDate(new Date(since), meta.timezone)))}`,
+    `SUMMARY:${escapeText(FEED[meta.language ?? LANGUAGE].stale(localDate(new Date(since), meta.timezone)))}`,
     "END:VEVENT",
   ];
 }

@@ -1,6 +1,7 @@
 name: calendars
 
-# Builds the calendars of fixtical.yml every hour: the sources are read every
+# Builds the calendars of the configuration (the FIXTICAL_CONFIG variable, else
+# fixtical.yml) every hour: the sources are read every
 # six hours (and on a push or a run by hand), in between the calendars are
 # built from the matches read last, so links that change at kick-off follow.
 # Also on a repository_dispatch of type "annotations": a tool sends its
@@ -63,6 +64,9 @@ jobs:
           site_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
           state_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/state.json
         env:
+          # Optional: the configuration itself, in place of fixtical.yml. A change of it starts
+          # no build: the next hourly one takes it, or run the workflow by hand.
+          FIXTICAL_CONFIG: ${{ vars.FIXTICAL_CONFIG }}
           # Optional: a secret gist and a token allowed to write gists keep the state with the
           # annotations between builds; without them annotations last until the next build.
           FIXTICAL_GIST_TOKEN: ${{ secrets.FIXTICAL_GIST_TOKEN }}

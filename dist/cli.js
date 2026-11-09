@@ -7385,6 +7385,13 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// src/annotations.ts
+var ANNOTATIONS_MAX_AGE_MS = 24 * 3600 * 1e3;
+function labelIn(label, language, fallback) {
+  if (typeof label === "string") return label;
+  return label[language] ?? label[fallback] ?? Object.values(label)[0] ?? "";
+}
+
 // src/http.ts
 var SourceError = class extends Error {
   constructor(message) {
@@ -7675,24 +7682,48 @@ function ownTeam(fixtures) {
 }
 
 // src/texts.ts
+var LANGUAGES = ["hu", "en"];
+var LANGUAGE = "hu";
 var FEED = {
-  stale: (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`,
-  /** The match's page, named in the description. */
-  matchPage: (url) => `Adatlap: ${url}`
+  hu: {
+    stale: (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`,
+    matchPage: (url) => `Adatlap: ${url}`
+  },
+  en: {
+    stale: (date) => `The calendar has not been updated since ${date}`,
+    matchPage: (url) => `Match page: ${url}`
+  }
 };
 var PAGE = {
-  title: "Meccsnapt\xE1rak",
-  intro: "Iratkozz fel egy napt\xE1rra: a meccsek \xE9s a v\xE1ltoz\xE1sok magukt\xF3l friss\xFClnek a napt\xE1radban.",
-  apple: "Feliratkoz\xE1s \u2013 iPhone / Mac",
-  google: "Feliratkoz\xE1s \u2013 Google Napt\xE1r",
-  address: "C\xEDm m\xE1s napt\xE1rhoz:",
-  file: "Napt\xE1rf\xE1jl",
-  /** Section headings by source, futsal apart from football. */
-  sections: {
-    mlsz: "Labdar\xFAg\xE1s \u2013 MLSZ adatbank",
-    "mlsz-futsal": "Futsal \u2013 MLSZ adatbank",
-    mvlsz: "V\xEDzilabda \u2013 MVLSZ adatbank",
-    mrsz: "R\xF6plabda \u2013 MRSZ"
+  hu: {
+    title: "Meccsnapt\xE1rak",
+    intro: "Iratkozz fel egy napt\xE1rra: a meccsek \xE9s a v\xE1ltoz\xE1sok magukt\xF3l friss\xFClnek a napt\xE1radban.",
+    apple: "Feliratkoz\xE1s \u2013 iPhone / Mac",
+    google: "Feliratkoz\xE1s \u2013 Google Napt\xE1r",
+    address: "C\xEDm m\xE1s napt\xE1rhoz:",
+    team: "Csapat:",
+    file: "Napt\xE1rf\xE1jl",
+    sections: {
+      mlsz: "Labdar\xFAg\xE1s \u2013 MLSZ adatbank",
+      "mlsz-futsal": "Futsal \u2013 MLSZ adatbank",
+      mvlsz: "V\xEDzilabda \u2013 MVLSZ adatbank",
+      mrsz: "R\xF6plabda \u2013 MRSZ"
+    }
+  },
+  en: {
+    title: "Match calendars",
+    intro: "Subscribe to a calendar: the matches and their changes reach your calendar by themselves.",
+    apple: "Subscribe \u2013 iPhone / Mac",
+    google: "Subscribe \u2013 Google Calendar",
+    address: "Address for other calendars:",
+    team: "Team:",
+    file: "Calendar file",
+    sections: {
+      mlsz: "Football \u2013 MLSZ data bank",
+      "mlsz-futsal": "Futsal \u2013 MLSZ data bank",
+      mvlsz: "Water polo \u2013 MVLSZ data bank",
+      mrsz: "Volleyball \u2013 MRSZ"
+    }
   }
 };
 
@@ -7743,11 +7774,14 @@ function summary(f) {
   const match = `${teamName(f.home)}${between}${teamName(f.away)}`;
   return f.competition ? `${match} | ${f.competition}` : match;
 }
-function eventLinks(f, note, start, now, timezone) {
+function eventLinks(f, note, start, now, timezone, language = LANGUAGE) {
   const lines = note?.lines ?? [];
   const before = start ? now < start : localDate(now, timezone) <= f.date;
-  if (before && note?.url) return { url: note.url, lines: [...lines, note.url] };
-  return { url: f.url, lines: f.url ? [...lines, FEED.matchPage(f.url)] : lines };
+  if (before && note?.url) {
+    const label = note.label ? labelIn(note.label, language, LANGUAGE) : "";
+    return { url: note.url, lines: [...lines, label ? `${label}: ${note.url}` : note.url] };
+  }
+  return { url: f.url, lines: f.url ? [...lines, FEED[language].matchPage(f.url)] : lines };
 }
 function event(f, meta, now, extras) {
   const note = extras.annotations?.get(f.date);
@@ -7756,7 +7790,7 @@ function event(f, meta, now, extras) {
     // The day is set, the time is not yet: an all-day event until it is.
     [`DTSTART;VALUE=DATE:${dateValue(f.date)}`, `DTEND;VALUE=DATE:${dateValue(addDays(f.date, 1))}`]
   );
-  const { url, lines } = eventLinks(f, note, start, now, meta.timezone);
+  const { url, lines } = eventLinks(f, note, start, now, meta.timezone, meta.language);
   return [
     "BEGIN:VEVENT",
     `UID:${f.source}-${f.id}@fixtical`,
@@ -7777,7 +7811,7 @@ function staleEvent(meta, since, now) {
     `DTSTAMP:${utcStamp(now)}`,
     `DTSTART;VALUE=DATE:${dateValue(today)}`,
     `DTEND;VALUE=DATE:${dateValue(addDays(today, 1))}`,
-    `SUMMARY:${escapeText(FEED.stale(localDate(new Date(since), meta.timezone)))}`,
+    `SUMMARY:${escapeText(FEED[meta.language ?? LANGUAGE].stale(localDate(new Date(since), meta.timezone)))}`,
     "END:VEVENT"
   ];
 }
@@ -13042,11 +13076,11 @@ function list(data, what) {
 }
 async function games(ctx, competition) {
   const all2 = [];
-  for (let page2 = 1; page2 <= 20; page2++) {
-    const path = `games?filter[competition_id]=${competition}&include=facility&per_page=500&page=${page2}`;
+  for (let page3 = 1; page3 <= 20; page3++) {
+    const path = `games?filter[competition_id]=${competition}&include=facility&per_page=500&page=${page3}`;
     const data = await api(ctx, path, "games");
     all2.push(...list(data, "games"));
-    if (page2 >= Number(data?.last_page ?? 1)) break;
+    if (page3 >= Number(data?.last_page ?? 1)) break;
   }
   return all2;
 }
@@ -13148,7 +13182,8 @@ async function build(config, state, client, now, options = {}) {
       name,
       color: cal.color,
       timezone: TIMEZONE,
-      staleSince: failingFor >= STALE_AFTER_MS ? entry.updatedAt ?? entry.failingSince : null
+      staleSince: failingFor >= STALE_AFTER_MS ? entry.updatedAt ?? entry.failingSince : null,
+      language: config.pages.find((p) => p.slug === cal.page)?.language
     };
     const extras = { annotations: options.annotations?.get(cal.slug) ?? /* @__PURE__ */ new Map(), places };
     const has = entry.fixtures.length > 0;
@@ -13158,6 +13193,7 @@ async function build(config, state, client, now, options = {}) {
       color: cal.color,
       source: cal.source,
       category: cal.category,
+      page: cal.page,
       error,
       wasFailing: !!previous?.failingSince,
       fetched,
@@ -13195,8 +13231,20 @@ var CALENDAR_KEYS = /* @__PURE__ */ new Set([
   "federation",
   "category",
   "competition",
-  "include"
+  "include",
+  "page",
+  "enabled"
 ]);
+var PAGE_KEYS = /* @__PURE__ */ new Set(["slug", "title", "default", "enabled", "language"]);
+function flag(raw, key, where, problems, fallback) {
+  const value = raw[key];
+  if (value === void 0 || value === null) return fallback;
+  if (typeof value !== "boolean") {
+    problems.push(`${where}.${key}: expected true or false`);
+    return fallback;
+  }
+  return value;
+}
 function defaultSlug(teamUrl, club, team, category) {
   if (teamUrl) return `team-${/(\d+)\.html$/.exec(teamUrl)?.[1] ?? "x"}`;
   if (club === null && team)
@@ -13272,38 +13320,95 @@ function calendar(raw, where, problems) {
     federation: int("federation") ?? 0,
     category,
     competition,
-    include
+    include,
+    page: str("page")
   };
+  const enabled = flag(raw, "enabled", where, problems, true);
   const own = SOURCES.get(source)?.validate(cal) ?? [];
   for (const problem of own) problems.push(`${where}.${problem}`);
-  return own.length ? null : cal;
+  return own.length ? null : { cal, enabled };
 }
-function loadConfig(yamlText) {
+function page2(raw, where, problems) {
+  if (!isRecord(raw)) {
+    problems.push(`${where}: expected a mapping`);
+    return null;
+  }
+  const before = problems.length;
+  for (const key of Object.keys(raw)) {
+    if (!PAGE_KEYS.has(key)) problems.push(`${where}: unknown key "${key}"`);
+  }
+  const slug = typeof raw.slug === "string" ? raw.slug.trim() : "";
+  if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
+  const title = typeof raw.title === "string" ? raw.title.trim() : "";
+  if (!title) problems.push(`${where}.title: expected a non-empty string`);
+  const isDefault = flag(raw, "default", where, problems, false);
+  const enabled = flag(raw, "enabled", where, problems, true);
+  const language = raw.language ?? LANGUAGE;
+  if (!LANGUAGES.includes(language))
+    problems.push(`${where}.language: one of ${LANGUAGES.join(", ")}`);
+  return problems.length > before ? null : { page: { slug, title, isDefault, language }, enabled };
+}
+function pagesOf(list2, calendars, problems) {
+  if (list2 === void 0 || list2 === null) {
+    for (const { cal, where } of calendars)
+      if (cal.page) problems.push(`${where}.page: no pages are configured`);
+    return [];
+  }
+  if (!Array.isArray(list2) || list2.length === 0) {
+    problems.push("pages: a list of at least one page");
+    return [];
+  }
+  const pages = [];
+  list2.forEach((item, i) => {
+    const where = `pages[${i}]`;
+    const p = page2(item, where, problems);
+    if (p) pages.push({ ...p, where });
+  });
+  const slugs = /* @__PURE__ */ new Set();
+  for (const { page: p } of pages) {
+    if (slugs.has(p.slug)) problems.push(`pages: slug "${p.slug}" is used twice`);
+    slugs.add(p.slug);
+  }
+  if (pages.filter((p) => p.page.isDefault).length > 1) problems.push("pages: more than one default");
+  for (const { cal, where } of calendars) {
+    if (!cal.page || !slugs.has(cal.page)) problems.push(`${where}.page: one of ${[...slugs].join(", ")}`);
+  }
+  for (const { page: p, where } of pages) {
+    if (!calendars.some(({ cal }) => cal.page === p.slug)) problems.push(`${where}: no calendar names it`);
+  }
+  const shown = pages.filter(({ page: p, enabled }) => enabled && calendars.some((c) => c.enabled && c.cal.page === p.slug)).map(({ page: p }) => p);
+  const main2 = shown.find((p) => p.isDefault) ?? shown[0];
+  return shown.map((p) => ({ ...p, isDefault: p === main2 }));
+}
+function loadConfig(yamlText, name = "fixtical.yml") {
   const problems = [];
   let raw;
   try {
     raw = (0, import_yaml.parse)(yamlText);
   } catch (e) {
-    throw new ConfigError([`fixtical.yml is not valid YAML: ${e instanceof Error ? e.message : e}`]);
+    throw new ConfigError([`${name} is not valid YAML: ${e instanceof Error ? e.message : e}`]);
   }
   if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
   const list2 = raw.calendars;
-  const calendars = [];
+  const all2 = [];
   if (!Array.isArray(list2) || list2.length === 0) {
     problems.push("calendars: at least one calendar");
   } else {
     list2.forEach((item, i) => {
-      const cal = calendar(item, `calendars[${i}]`, problems);
-      if (cal) calendars.push(cal);
+      const where = `calendars[${i}]`;
+      const c = calendar(item, where, problems);
+      if (c) all2.push({ ...c, where });
     });
     const seen = /* @__PURE__ */ new Set();
-    for (const cal of calendars) {
+    for (const { cal } of all2) {
       if (seen.has(cal.slug)) problems.push(`calendars: slug "${cal.slug}" is used twice`);
       seen.add(cal.slug);
     }
   }
+  const pages = pagesOf(raw.pages, all2, problems);
   if (problems.length) throw new ConfigError(problems);
-  return { calendars };
+  const onPage = (cal) => !cal.page || pages.some((p) => p.slug === cal.page);
+  return { calendars: all2.filter((c) => c.enabled && onPage(c.cal)).map((c) => c.cal), pages };
 }
 async function readConfig(path) {
   let yaml;
@@ -13334,10 +13439,10 @@ var GOOGLE_ICON = icon(
 );
 
 // src/formats/html.ts
-function sectionOf(feed) {
+function sectionOf(feed, language = LANGUAGE) {
   const source = feed.source ?? "";
   const futsal = source === "mlsz" && /futsal/.test(feed.category ?? "");
-  return PAGE.sections[futsal ? "mlsz-futsal" : source] ?? source;
+  return PAGE[language].sections[futsal ? "mlsz-futsal" : source] ?? source;
 }
 function competitionsOf(fixtures) {
   const counts = /* @__PURE__ */ new Map();
@@ -13361,6 +13466,9 @@ function subscribeLinks(feedUrl) {
 function indexHtml(feeds, options = {}) {
   const site = options.siteUrl ?? "";
   const base = site && !site.endsWith("/") ? `${site}/` : site;
+  const root = options.root ?? "";
+  const language = options.language ?? LANGUAGE;
+  const text2 = PAGE[language];
   const item = (f) => {
     const covers = f.competitions?.length ? `
       <p class="covers">${f.competitions.map(escapeHtml).join(" \xB7 ")}</p>` : "";
@@ -13368,7 +13476,7 @@ function indexHtml(feeds, options = {}) {
     if (!base) {
       return `    <li>
 ${name}
-      <p><a href="${escapeHtml(f.slug)}.ics">${PAGE.file}</a></p>
+      <p><a href="${root}${escapeHtml(f.slug)}.ics">${text2.file}</a></p>
     </li>`;
     }
     const url = `${base}${f.slug}.ics`;
@@ -13378,30 +13486,43 @@ ${name}
     return [
       `    <li${style}>`,
       name,
-      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${PAGE.apple}</span></a>`,
-      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${PAGE.google}</span></a></p>`,
-      `      <p class="address">${PAGE.address} <code>${escapeHtml(url)}</code></p>`,
+      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${text2.apple}</span></a>`,
+      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${text2.google}</span></a></p>`,
+      `      <p class="address">${text2.address} <code>${escapeHtml(url)}</code></p>`,
       "    </li>"
     ].join("\n");
   };
   const sections = /* @__PURE__ */ new Map();
   for (const f of feeds) {
-    const title = sectionOf(f);
-    sections.set(title, [...sections.get(title) ?? [], f]);
+    const title2 = sectionOf(f, language);
+    sections.set(title2, [...sections.get(title2) ?? [], f]);
   }
-  const body = [...sections].map(([title, list2]) => {
-    const heading = title ? `  <h2>${escapeHtml(title)}</h2>
+  const body = [...sections].map(([title2, list2]) => {
+    const heading = title2 ? `  <h2>${escapeHtml(title2)}</h2>
 ` : "";
     return `${heading}  <ul>
 ${list2.map(item).join("\n")}
   </ul>`;
   }).join("\n");
+  const pages = options.pages ?? [];
+  const current = pages.find((p) => p.slug === options.current);
+  const pageUrl = (p) => `${root}${escapeHtml(p.slug)}/`;
+  const switcher = pages.length > 1 ? [
+    `  <p class="pages"><label>${text2.team} <select onchange="location.href = this.value">`,
+    ...pages.map(
+      (p) => `    <option value="${pageUrl(p)}"${p === current ? " selected" : ""}>${escapeHtml(p.title)}</option>`
+    ),
+    "  </select></label></p>",
+    `  <noscript><p class="pages">${text2.team} ${pages.map((p) => `<a href="${pageUrl(p)}">${escapeHtml(p.title)}</a>`).join(" \xB7 ")}</p></noscript>`,
+    ""
+  ].join("\n") : "";
+  const title = current ? `${text2.title} \u2013 ${escapeHtml(current.title)}` : text2.title;
   return `<!doctype html>
-<html lang="hu">
+<html lang="${language}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${PAGE.title}</title>
+  <title>${title}</title>
   <style>
     :root { color-scheme: light dark; --fg: #1d1d1f; --bg: #fff; --muted: #6e6e73; --accent: #0a66c2; --line: #d2d2d7; }
     @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --bg: #1c1c1e; --muted: #a1a1a6; --accent: #4da3ff; --line: #3a3a3c; } }
@@ -13417,12 +13538,14 @@ ${list2.map(item).join("\n")}
     .icon { width: 1.1em; height: 1.1em; flex: none; }
     .address { margin: 0; color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
     code { color: var(--fg); user-select: all; }
+    .pages { margin: 1rem 0 0; }
+    select { font: inherit; padding: .3rem .5rem; border-radius: .4rem; }
   </style>
 </head>
 <body>
-  <h1>${PAGE.title}</h1>
-  <p>${PAGE.intro}</p>
-${body}
+  <h1>${text2.title}</h1>
+  <p>${text2.intro}</p>
+${switcher}${body}
 </body>
 </html>
 `;
@@ -13480,7 +13603,7 @@ async function writeAtomic(path, content) {
   await writeFile(tmp, content, "utf8");
   await rename(tmp, path);
 }
-async function writeDirectory(dir, results, state, page2 = {}) {
+async function writeDirectory(dir, results, state, page3 = {}, pages = []) {
   await mkdir(dir, { recursive: true });
   const written = [];
   for (const r of results) {
@@ -13490,13 +13613,22 @@ async function writeDirectory(dir, results, state, page2 = {}) {
 `);
     written.push(`${r.slug}.ics`, `${r.slug}.json`);
   }
-  await writeAtomic(
-    join2(dir, "index.html"),
-    indexHtml(
-      results.filter((r) => r.ics).map((r) => ({ ...r, competitions: competitionsOf(r.fixtures) })),
-      page2
-    )
-  );
+  const feeds = results.filter((r) => r.ics).map((r) => ({ ...r, competitions: competitionsOf(r.fixtures) }));
+  const main2 = pages.find((p) => p.isDefault);
+  const mainHtml = main2 ? indexHtml(
+    feeds.filter((f) => f.page === main2.slug),
+    { ...page3, pages, current: main2.slug, language: main2.language }
+  ) : indexHtml(feeds, page3);
+  await writeAtomic(join2(dir, "index.html"), mainHtml);
+  for (const p of pages) {
+    await mkdir(join2(dir, p.slug), { recursive: true });
+    const html = indexHtml(
+      feeds.filter((f) => f.page === p.slug),
+      { ...page3, pages, current: p.slug, root: "../", language: p.language }
+    );
+    await writeAtomic(join2(dir, p.slug, "index.html"), html);
+    written.push(`${p.slug}/index.html`);
+  }
   const { notes: _notes, ...published } = state;
   await writeAtomic(join2(dir, STATE_FILE), `${JSON.stringify(published)}
 `);
@@ -13544,7 +13676,7 @@ async function main(argv, env = process.env, client = new Client(), fetchFn = de
     geocoder: new Geocoder({ googleKey: env.FIXTICAL_GOOGLE_MAPS_KEY?.trim(), fetch: fetchFn }),
     keys: { mvlsz: env.FIXTICAL_MVLSZ_KEY?.trim() }
   });
-  await writeDirectory(values.out, results, state);
+  await writeDirectory(values.out, results, state, {}, config.pages);
   let missing = 0;
   for (const r of results) {
     if (!r.error) {

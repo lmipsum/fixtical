@@ -1,9 +1,14 @@
 import { isRecord } from "./util.ts";
 
+/** A link's name: one text, or one per language (`{"hu": ..., "en": ...}`). */
+export type Label = string | Record<string, string>;
+
 /** Extra lines another tool adds to the event of a match day. */
 export interface Annotation {
   lines: string[];
   url: string | null;
+  /** Names `url`; shown as `<label>: <url>`. */
+  label?: Label;
 }
 
 /** Annotations by calendar slug, then by date (YYYY-MM-DD). */
@@ -16,6 +21,7 @@ const MAX_LINES = 5;
 const MAX_LINE_LENGTH = 200;
 const MAX_URL_LENGTH = 500;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const LANGUAGE_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
 
 /** A line as plain text: no control characters, single spaces, length-limited. */
 function cleanLine(value: unknown): string | null {
@@ -25,6 +31,25 @@ function cleanLine(value: unknown): string | null {
     .replace(/\s+/g, " ")
     .trim();
   return text ? text.slice(0, MAX_LINE_LENGTH) : null;
+}
+
+/** A label as plain text, or by language tag; null when it is neither. */
+function cleanLabel(value: unknown): Label | null {
+  if (typeof value === "string") return cleanLine(value);
+  if (!isRecord(value)) return null;
+  const byLanguage: Record<string, string> = {};
+  for (const [language, text] of Object.entries(value)) {
+    const clean = cleanLine(text);
+    if (!LANGUAGE_RE.test(language) || clean === null) return null;
+    byLanguage[language] = clean;
+  }
+  return Object.keys(byLanguage).length ? byLanguage : null;
+}
+
+/** The label in `language`, else in `fallback`, else the first one given. */
+export function labelIn(label: Label, language: string, fallback: string): string {
+  if (typeof label === "string") return label;
+  return label[language] ?? label[fallback] ?? Object.values(label)[0] ?? "";
 }
 
 function cleanUrl(value: unknown): string | null {
@@ -67,13 +92,20 @@ export function addAnnotations(into: Annotations, text: string, now: Date, maxAg
       const lines = Array.isArray(raw.lines) ? raw.lines.map(cleanLine).filter((l) => l !== null) : [];
       const url = raw.url === undefined || raw.url === null ? null : cleanUrl(raw.url);
       if (raw.url && !url) problems.push(`${slug}.${date}.url: expected an https link`);
+      const label = raw.label === undefined || raw.label === null ? null : cleanLabel(raw.label);
+      if (raw.label !== undefined && raw.label !== null && !label) {
+        problems.push(`${slug}.${date}.label: expected a text, or texts by language`);
+      } else if (label && !url) {
+        problems.push(`${slug}.${date}.label: names no link`);
+      }
       if (!lines.length && !url) continue;
       const byDate = into.get(slug) ?? new Map<string, Annotation>();
       const current = byDate.get(date) ?? { lines: [], url: null };
-      byDate.set(date, {
-        lines: [...current.lines, ...lines].slice(0, MAX_LINES),
-        url: current.url ?? url,
-      });
+      // The first link is kept, with its own label.
+      const kept = current.url ? current : { url, label: url ? label : null };
+      const merged: Annotation = { lines: [...current.lines, ...lines].slice(0, MAX_LINES), url: kept.url };
+      if (kept.label) merged.label = kept.label;
+      byDate.set(date, merged);
       into.set(slug, byDate);
     }
   }
