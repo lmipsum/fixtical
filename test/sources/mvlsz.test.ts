@@ -26,6 +26,7 @@ function calendar(overrides: Partial<CalendarConfig> = {}): CalendarConfig {
     category: "men",
     competition: null,
     include: { league: true, cup: true },
+    page: null,
     ...overrides,
   };
 }

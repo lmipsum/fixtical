@@ -40,6 +40,12 @@ export function textOn(color: string): string {
 export interface PageOptions {
   /** Address the page is published at; without it the page links the files only. */
   siteUrl?: string;
+  /** The site's pages, for the switcher; none or one: no switcher. */
+  pages?: readonly { slug: string; title: string }[];
+  /** The page shown, one of `pages`. */
+  current?: string;
+  /** The way from this page to the site's root, for relative links: "" or "../". */
+  root?: string;
 }
 
 function escapeHtml(text: string): string {
@@ -56,6 +62,7 @@ export function subscribeLinks(feedUrl: string): { webcal: string; google: strin
 export function indexHtml(feeds: readonly FeedLink[], options: PageOptions = {}): string {
   const site = options.siteUrl ?? "";
   const base = site && !site.endsWith("/") ? `${site}/` : site;
+  const root = options.root ?? "";
   const item = (f: FeedLink): string => {
     const covers = f.competitions?.length
       ? `
@@ -63,7 +70,7 @@ export function indexHtml(feeds: readonly FeedLink[], options: PageOptions = {})
       : "";
     const name = `      <h3>${escapeHtml(f.name)}</h3>${covers}`;
     if (!base) {
-      return `    <li>\n${name}\n      <p><a href="${escapeHtml(f.slug)}.ics">${PAGE.file}</a></p>\n    </li>`;
+      return `    <li>\n${name}\n      <p><a href="${root}${escapeHtml(f.slug)}.ics">${PAGE.file}</a></p>\n    </li>`;
     }
     const url = `${base}${f.slug}.ics`;
     const { webcal, google } = subscribeLinks(url);
@@ -90,12 +97,32 @@ export function indexHtml(feeds: readonly FeedLink[], options: PageOptions = {})
       return `${heading}  <ul>\n${list.map(item).join("\n")}\n  </ul>`;
     })
     .join("\n");
+  const pages = options.pages ?? [];
+  const current = pages.find((p) => p.slug === options.current);
+  const pageUrl = (p: { slug: string }) => `${root}${escapeHtml(p.slug)}/`;
+  // A select that opens the chosen page's own address; links without scripts.
+  const switcher =
+    pages.length > 1
+      ? [
+          `  <p class="pages"><label>${PAGE.team} <select onchange="location.href = this.value">`,
+          ...pages.map(
+            (p) =>
+              `    <option value="${pageUrl(p)}"${p === current ? " selected" : ""}>${escapeHtml(p.title)}</option>`,
+          ),
+          "  </select></label></p>",
+          `  <noscript><p class="pages">${PAGE.team} ${pages
+            .map((p) => `<a href="${pageUrl(p)}">${escapeHtml(p.title)}</a>`)
+            .join(" · ")}</p></noscript>`,
+          "",
+        ].join("\n")
+      : "";
+  const title = current ? `${PAGE.title} – ${escapeHtml(current.title)}` : PAGE.title;
   return `<!doctype html>
 <html lang="hu">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${PAGE.title}</title>
+  <title>${title}</title>
   <style>
     :root { color-scheme: light dark; --fg: #1d1d1f; --bg: #fff; --muted: #6e6e73; --accent: #0a66c2; --line: #d2d2d7; }
     @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --bg: #1c1c1e; --muted: #a1a1a6; --accent: #4da3ff; --line: #3a3a3c; } }
@@ -111,12 +138,14 @@ export function indexHtml(feeds: readonly FeedLink[], options: PageOptions = {})
     .icon { width: 1.1em; height: 1.1em; flex: none; }
     .address { margin: 0; color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
     code { color: var(--fg); user-select: all; }
+    .pages { margin: 1rem 0 0; }
+    select { font: inherit; padding: .3rem .5rem; border-radius: .4rem; }
   </style>
 </head>
 <body>
   <h1>${PAGE.title}</h1>
   <p>${PAGE.intro}</p>
-${body}
+${switcher}${body}
 </body>
 </html>
 `;

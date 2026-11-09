@@ -145,10 +145,10 @@ export async function run(
       fetch,
     });
     if (Object.keys(notes).length) next.notes = notes;
-    next.digest = contentDigest(results);
+    next.digest = contentDigest(results, config.pages);
     // Reading the sources changes the state, which is published too.
     const changed = fetch || next.digest !== state.digest;
-    await writeDirectory(out, results, next, { siteUrl: input(env, "site_url") });
+    await writeDirectory(out, results, next, { siteUrl: input(env, "site_url") }, config.pages);
     // The gist keeps the state with the annotations, which the published one leaves out.
     const stateText = `${JSON.stringify(next)}\n`;
     if (gist && gistFiles?.get(STATE_FILE) !== stateText) await gist.update({ [STATE_FILE]: stateText });

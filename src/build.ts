@@ -28,6 +28,8 @@ export interface CalendarResult {
   color: string | null;
   source: string;
   category: string;
+  /** The page listing it; null without pages. */
+  page: string | null;
   /** Why this build could not read the source; the last good fixtures are used then. */
   error: string | null;
   /** Whether the previous build could not read the source either. */
@@ -142,6 +144,7 @@ export async function build(
       color: cal.color,
       source: cal.source,
       category: cal.category,
+      page: cal.page,
       error,
       wasFailing: !!previous?.failingSince,
       fetched,

@@ -7694,6 +7694,8 @@ var PAGE = {
   apple: "Feliratkoz\xE1s \u2013 iPhone / Mac",
   google: "Feliratkoz\xE1s \u2013 Google Napt\xE1r",
   address: "C\xEDm m\xE1s napt\xE1rhoz:",
+  /** The page switcher's label, and the list of the pages without scripts. */
+  team: "Csapat:",
   file: "Napt\xE1rf\xE1jl",
   /** Section headings by source, futsal apart from football. */
   sections: {
@@ -13053,11 +13055,11 @@ function list(data, what) {
 }
 async function games(ctx, competition) {
   const all2 = [];
-  for (let page2 = 1; page2 <= 20; page2++) {
-    const path = `games?filter[competition_id]=${competition}&include=facility&per_page=500&page=${page2}`;
+  for (let page3 = 1; page3 <= 20; page3++) {
+    const path = `games?filter[competition_id]=${competition}&include=facility&per_page=500&page=${page3}`;
     const data = await api(ctx, path, "games");
     all2.push(...list(data, "games"));
-    if (page2 >= Number(data?.last_page ?? 1)) break;
+    if (page3 >= Number(data?.last_page ?? 1)) break;
   }
   return all2;
 }
@@ -13169,6 +13171,7 @@ async function build(config, state, client, now, options = {}) {
       color: cal.color,
       source: cal.source,
       category: cal.category,
+      page: cal.page,
       error,
       wasFailing: !!previous?.failingSince,
       fetched,
@@ -13206,8 +13209,20 @@ var CALENDAR_KEYS = /* @__PURE__ */ new Set([
   "federation",
   "category",
   "competition",
-  "include"
+  "include",
+  "page",
+  "enabled"
 ]);
+var PAGE_KEYS = /* @__PURE__ */ new Set(["slug", "title", "default", "enabled"]);
+function flag(raw, key, where, problems, fallback) {
+  const value = raw[key];
+  if (value === void 0 || value === null) return fallback;
+  if (typeof value !== "boolean") {
+    problems.push(`${where}.${key}: expected true or false`);
+    return fallback;
+  }
+  return value;
+}
 function defaultSlug(teamUrl, club, team, category) {
   if (teamUrl) return `team-${/(\d+)\.html$/.exec(teamUrl)?.[1] ?? "x"}`;
   if (club === null && team)
@@ -13283,11 +13298,62 @@ function calendar(raw, where, problems) {
     federation: int("federation") ?? 0,
     category,
     competition,
-    include
+    include,
+    page: str("page")
   };
+  const enabled = flag(raw, "enabled", where, problems, true);
   const own = SOURCES.get(source)?.validate(cal) ?? [];
   for (const problem of own) problems.push(`${where}.${problem}`);
-  return own.length ? null : cal;
+  return own.length ? null : { cal, enabled };
+}
+function page2(raw, where, problems) {
+  if (!isRecord(raw)) {
+    problems.push(`${where}: expected a mapping`);
+    return null;
+  }
+  const before = problems.length;
+  for (const key of Object.keys(raw)) {
+    if (!PAGE_KEYS.has(key)) problems.push(`${where}: unknown key "${key}"`);
+  }
+  const slug = typeof raw.slug === "string" ? raw.slug.trim() : "";
+  if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
+  const title = typeof raw.title === "string" ? raw.title.trim() : "";
+  if (!title) problems.push(`${where}.title: expected a non-empty string`);
+  const isDefault = flag(raw, "default", where, problems, false);
+  const enabled = flag(raw, "enabled", where, problems, true);
+  return problems.length > before ? null : { page: { slug, title, isDefault }, enabled };
+}
+function pagesOf(list2, calendars, problems) {
+  if (list2 === void 0 || list2 === null) {
+    for (const { cal, where } of calendars)
+      if (cal.page) problems.push(`${where}.page: no pages are configured`);
+    return [];
+  }
+  if (!Array.isArray(list2) || list2.length === 0) {
+    problems.push("pages: a list of at least one page");
+    return [];
+  }
+  const pages = [];
+  list2.forEach((item, i) => {
+    const where = `pages[${i}]`;
+    const p = page2(item, where, problems);
+    if (p) pages.push({ ...p, where });
+  });
+  const slugs = /* @__PURE__ */ new Set();
+  for (const { page: p } of pages) {
+    if (slugs.has(p.slug)) problems.push(`pages: slug "${p.slug}" is used twice`);
+    slugs.add(p.slug);
+  }
+  if (pages.filter((p) => p.page.isDefault).length > 1) problems.push("pages: more than one default");
+  for (const { cal, where } of calendars) {
+    if (!cal.page || !slugs.has(cal.page)) problems.push(`${where}.page: one of ${[...slugs].join(", ")}`);
+  }
+  for (const { page: p, where } of pages) {
+    if (!calendars.some(({ cal }) => cal.page === p.slug)) problems.push(`${where}: no calendar names it`);
+  }
+  const shown = pages.filter(({ page: p, enabled }) => enabled && calendars.some((c) => c.enabled && c.cal.page === p.slug)).map(({ page: p }) => p);
+  const main2 = shown.find((p) => p.isDefault) ?? shown[0];
+  return shown.map((p) => ({ ...p, isDefault: p === main2 }));
 }
 function loadConfig(yamlText, name = "fixtical.yml") {
   const problems = [];
@@ -13299,22 +13365,25 @@ function loadConfig(yamlText, name = "fixtical.yml") {
   }
   if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
   const list2 = raw.calendars;
-  const calendars = [];
+  const all2 = [];
   if (!Array.isArray(list2) || list2.length === 0) {
     problems.push("calendars: at least one calendar");
   } else {
     list2.forEach((item, i) => {
-      const cal = calendar(item, `calendars[${i}]`, problems);
-      if (cal) calendars.push(cal);
+      const where = `calendars[${i}]`;
+      const c = calendar(item, where, problems);
+      if (c) all2.push({ ...c, where });
     });
     const seen = /* @__PURE__ */ new Set();
-    for (const cal of calendars) {
+    for (const { cal } of all2) {
       if (seen.has(cal.slug)) problems.push(`calendars: slug "${cal.slug}" is used twice`);
       seen.add(cal.slug);
     }
   }
+  const pages = pagesOf(raw.pages, all2, problems);
   if (problems.length) throw new ConfigError(problems);
-  return { calendars };
+  const onPage = (cal) => !cal.page || pages.some((p) => p.slug === cal.page);
+  return { calendars: all2.filter((c) => c.enabled && onPage(c.cal)).map((c) => c.cal), pages };
 }
 async function readConfig(path) {
   let yaml;
@@ -13372,6 +13441,7 @@ function subscribeLinks(feedUrl) {
 function indexHtml(feeds, options = {}) {
   const site = options.siteUrl ?? "";
   const base = site && !site.endsWith("/") ? `${site}/` : site;
+  const root = options.root ?? "";
   const item = (f) => {
     const covers = f.competitions?.length ? `
       <p class="covers">${f.competitions.map(escapeHtml).join(" \xB7 ")}</p>` : "";
@@ -13379,7 +13449,7 @@ function indexHtml(feeds, options = {}) {
     if (!base) {
       return `    <li>
 ${name}
-      <p><a href="${escapeHtml(f.slug)}.ics">${PAGE.file}</a></p>
+      <p><a href="${root}${escapeHtml(f.slug)}.ics">${PAGE.file}</a></p>
     </li>`;
     }
     const url = `${base}${f.slug}.ics`;
@@ -13397,22 +13467,35 @@ ${name}
   };
   const sections = /* @__PURE__ */ new Map();
   for (const f of feeds) {
-    const title = sectionOf(f);
-    sections.set(title, [...sections.get(title) ?? [], f]);
+    const title2 = sectionOf(f);
+    sections.set(title2, [...sections.get(title2) ?? [], f]);
   }
-  const body = [...sections].map(([title, list2]) => {
-    const heading = title ? `  <h2>${escapeHtml(title)}</h2>
+  const body = [...sections].map(([title2, list2]) => {
+    const heading = title2 ? `  <h2>${escapeHtml(title2)}</h2>
 ` : "";
     return `${heading}  <ul>
 ${list2.map(item).join("\n")}
   </ul>`;
   }).join("\n");
+  const pages = options.pages ?? [];
+  const current = pages.find((p) => p.slug === options.current);
+  const pageUrl = (p) => `${root}${escapeHtml(p.slug)}/`;
+  const switcher = pages.length > 1 ? [
+    `  <p class="pages"><label>${PAGE.team} <select onchange="location.href = this.value">`,
+    ...pages.map(
+      (p) => `    <option value="${pageUrl(p)}"${p === current ? " selected" : ""}>${escapeHtml(p.title)}</option>`
+    ),
+    "  </select></label></p>",
+    `  <noscript><p class="pages">${PAGE.team} ${pages.map((p) => `<a href="${pageUrl(p)}">${escapeHtml(p.title)}</a>`).join(" \xB7 ")}</p></noscript>`,
+    ""
+  ].join("\n") : "";
+  const title = current ? `${PAGE.title} \u2013 ${escapeHtml(current.title)}` : PAGE.title;
   return `<!doctype html>
 <html lang="hu">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${PAGE.title}</title>
+  <title>${title}</title>
   <style>
     :root { color-scheme: light dark; --fg: #1d1d1f; --bg: #fff; --muted: #6e6e73; --accent: #0a66c2; --line: #d2d2d7; }
     @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --bg: #1c1c1e; --muted: #a1a1a6; --accent: #4da3ff; --line: #3a3a3c; } }
@@ -13428,12 +13511,14 @@ ${list2.map(item).join("\n")}
     .icon { width: 1.1em; height: 1.1em; flex: none; }
     .address { margin: 0; color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
     code { color: var(--fg); user-select: all; }
+    .pages { margin: 1rem 0 0; }
+    select { font: inherit; padding: .3rem .5rem; border-radius: .4rem; }
   </style>
 </head>
 <body>
   <h1>${PAGE.title}</h1>
   <p>${PAGE.intro}</p>
-${body}
+${switcher}${body}
 </body>
 </html>
 `;
@@ -13491,7 +13576,7 @@ async function writeAtomic(path, content) {
   await writeFile(tmp, content, "utf8");
   await rename(tmp, path);
 }
-async function writeDirectory(dir, results, state, page2 = {}) {
+async function writeDirectory(dir, results, state, page3 = {}, pages = []) {
   await mkdir(dir, { recursive: true });
   const written = [];
   for (const r of results) {
@@ -13501,13 +13586,22 @@ async function writeDirectory(dir, results, state, page2 = {}) {
 `);
     written.push(`${r.slug}.ics`, `${r.slug}.json`);
   }
-  await writeAtomic(
-    join2(dir, "index.html"),
-    indexHtml(
-      results.filter((r) => r.ics).map((r) => ({ ...r, competitions: competitionsOf(r.fixtures) })),
-      page2
-    )
-  );
+  const feeds = results.filter((r) => r.ics).map((r) => ({ ...r, competitions: competitionsOf(r.fixtures) }));
+  const main2 = pages.find((p) => p.isDefault);
+  const mainHtml = main2 ? indexHtml(
+    feeds.filter((f) => f.page === main2.slug),
+    { ...page3, pages, current: main2.slug }
+  ) : indexHtml(feeds, page3);
+  await writeAtomic(join2(dir, "index.html"), mainHtml);
+  for (const p of pages) {
+    await mkdir(join2(dir, p.slug), { recursive: true });
+    const html = indexHtml(
+      feeds.filter((f) => f.page === p.slug),
+      { ...page3, pages, current: p.slug, root: "../" }
+    );
+    await writeAtomic(join2(dir, p.slug, "index.html"), html);
+    written.push(`${p.slug}/index.html`);
+  }
   const { notes: _notes, ...published } = state;
   await writeAtomic(join2(dir, STATE_FILE), `${JSON.stringify(published)}
 `);
@@ -13555,7 +13649,7 @@ async function main(argv, env = process.env, client = new Client(), fetchFn = de
     geocoder: new Geocoder({ googleKey: env.FIXTICAL_GOOGLE_MAPS_KEY?.trim(), fetch: fetchFn }),
     keys: { mvlsz: env.FIXTICAL_MVLSZ_KEY?.trim() }
   });
-  await writeDirectory(values.out, results, state);
+  await writeDirectory(values.out, results, state, {}, config.pages);
   let missing = 0;
   for (const r of results) {
     if (!r.error) {

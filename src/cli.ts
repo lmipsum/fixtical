@@ -52,7 +52,7 @@ export async function main(
     geocoder: new Geocoder({ googleKey: env.FIXTICAL_GOOGLE_MAPS_KEY?.trim(), fetch: fetchFn }),
     keys: { mvlsz: env.FIXTICAL_MVLSZ_KEY?.trim() },
   });
-  await writeDirectory(values.out, results, state);
+  await writeDirectory(values.out, results, state, {}, config.pages);
   let missing = 0;
   for (const r of results) {
     if (!r.error) {

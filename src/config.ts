@@ -20,10 +20,24 @@ export interface CalendarConfig {
   /** Regular expression on the competition name, narrowing the category. */
   competition: string | null;
   include: { league: boolean; cup: boolean };
+  /** The page listing it (the slug of one of `pages`); null without pages. */
+  page: string | null;
+}
+
+/** A page of the site listing some of the calendars. */
+export interface PageConfig {
+  /** Its address under the site: `<slug>/`. */
+  slug: string;
+  title: string;
+  /** The page the site's main page shows. */
+  isDefault: boolean;
 }
 
 export interface Config {
+  /** The calendars switched on. */
   calendars: CalendarConfig[];
+  /** The pages switched on that list a calendar, in the configured order; empty without pages. */
+  pages: PageConfig[];
 }
 
 export class ConfigError extends Error {
@@ -50,7 +64,27 @@ const CALENDAR_KEYS = new Set([
   "category",
   "competition",
   "include",
+  "page",
+  "enabled",
 ]);
+const PAGE_KEYS = new Set(["slug", "title", "default", "enabled"]);
+
+/** A true/false setting; `fallback` when it is not set. */
+function flag(
+  raw: Record<string, unknown>,
+  key: string,
+  where: string,
+  problems: string[],
+  fallback: boolean,
+) {
+  const value = raw[key];
+  if (value === undefined || value === null) return fallback;
+  if (typeof value !== "boolean") {
+    problems.push(`${where}.${key}: expected true or false`);
+    return fallback;
+  }
+  return value;
+}
 
 function defaultSlug(
   teamUrl: string | null,
@@ -69,7 +103,12 @@ function defaultSlug(
   return category === "men" ? `club-${club}` : `club-${club}-${category}`;
 }
 
-function calendar(raw: unknown, where: string, problems: string[]): CalendarConfig | null {
+/** A calendar's settings, and whether it is switched on. */
+function calendar(
+  raw: unknown,
+  where: string,
+  problems: string[],
+): { cal: CalendarConfig; enabled: boolean } | null {
   if (!isRecord(raw)) {
     problems.push(`${where}: expected a mapping`);
     return null;
@@ -146,11 +185,80 @@ function calendar(raw: unknown, where: string, problems: string[]): CalendarConf
     category,
     competition,
     include,
+    page: str("page"),
   };
+  const enabled = flag(raw, "enabled", where, problems, true);
   // The source's own settings: e.g. water polo needs a club, volleyball a team.
   const own = SOURCES.get(source)?.validate(cal) ?? [];
   for (const problem of own) problems.push(`${where}.${problem}`);
-  return own.length ? null : cal;
+  return own.length ? null : { cal, enabled };
+}
+
+/** A page's settings, and whether it is switched on. */
+function page(
+  raw: unknown,
+  where: string,
+  problems: string[],
+): { page: PageConfig; enabled: boolean } | null {
+  if (!isRecord(raw)) {
+    problems.push(`${where}: expected a mapping`);
+    return null;
+  }
+  const before = problems.length;
+  for (const key of Object.keys(raw)) {
+    if (!PAGE_KEYS.has(key)) problems.push(`${where}: unknown key "${key}"`);
+  }
+  const slug = typeof raw.slug === "string" ? raw.slug.trim() : "";
+  if (!SLUG_RE.test(slug)) problems.push(`${where}.slug: lowercase letters, digits and dashes`);
+  const title = typeof raw.title === "string" ? raw.title.trim() : "";
+  if (!title) problems.push(`${where}.title: expected a non-empty string`);
+  const isDefault = flag(raw, "default", where, problems, false);
+  const enabled = flag(raw, "enabled", where, problems, true);
+  return problems.length > before ? null : { page: { slug, title, isDefault }, enabled };
+}
+
+/**
+ * The pages switched on that list a calendar switched on, the default one
+ * marked (the configured default while it is shown, else the first page).
+ * Adds the problems of the pages and of the calendars' `page` settings.
+ */
+function pagesOf(
+  list: unknown,
+  calendars: readonly { cal: CalendarConfig; enabled: boolean; where: string }[],
+  problems: string[],
+): PageConfig[] {
+  if (list === undefined || list === null) {
+    for (const { cal, where } of calendars)
+      if (cal.page) problems.push(`${where}.page: no pages are configured`);
+    return [];
+  }
+  if (!Array.isArray(list) || list.length === 0) {
+    problems.push("pages: a list of at least one page");
+    return [];
+  }
+  const pages: { page: PageConfig; enabled: boolean; where: string }[] = [];
+  list.forEach((item, i) => {
+    const where = `pages[${i}]`;
+    const p = page(item, where, problems);
+    if (p) pages.push({ ...p, where });
+  });
+  const slugs = new Set<string>();
+  for (const { page: p } of pages) {
+    if (slugs.has(p.slug)) problems.push(`pages: slug "${p.slug}" is used twice`);
+    slugs.add(p.slug);
+  }
+  if (pages.filter((p) => p.page.isDefault).length > 1) problems.push("pages: more than one default");
+  for (const { cal, where } of calendars) {
+    if (!cal.page || !slugs.has(cal.page)) problems.push(`${where}.page: one of ${[...slugs].join(", ")}`);
+  }
+  for (const { page: p, where } of pages) {
+    if (!calendars.some(({ cal }) => cal.page === p.slug)) problems.push(`${where}: no calendar names it`);
+  }
+  const shown = pages
+    .filter(({ page: p, enabled }) => enabled && calendars.some((c) => c.enabled && c.cal.page === p.slug))
+    .map(({ page: p }) => p);
+  const main = shown.find((p) => p.isDefault) ?? shown[0];
+  return shown.map((p) => ({ ...p, isDefault: p === main }));
 }
 
 /** The configuration from a YAML text; `name` is where it came from, for the messages. */
@@ -165,22 +273,26 @@ export function loadConfig(yamlText: string, name = "fixtical.yml"): Config {
   if (!isRecord(raw)) throw new ConfigError(["the configuration must be a mapping"]);
 
   const list = raw.calendars;
-  const calendars: CalendarConfig[] = [];
+  const all: { cal: CalendarConfig; enabled: boolean; where: string }[] = [];
   if (!Array.isArray(list) || list.length === 0) {
     problems.push("calendars: at least one calendar");
   } else {
     list.forEach((item, i) => {
-      const cal = calendar(item, `calendars[${i}]`, problems);
-      if (cal) calendars.push(cal);
+      const where = `calendars[${i}]`;
+      const c = calendar(item, where, problems);
+      if (c) all.push({ ...c, where });
     });
     const seen = new Set<string>();
-    for (const cal of calendars) {
+    for (const { cal } of all) {
       if (seen.has(cal.slug)) problems.push(`calendars: slug "${cal.slug}" is used twice`);
       seen.add(cal.slug);
     }
   }
+  const pages = pagesOf(raw.pages, all, problems);
   if (problems.length) throw new ConfigError(problems);
-  return { calendars };
+  // A calendar is built while it and its page are switched on.
+  const onPage = (cal: CalendarConfig) => !cal.page || pages.some((p) => p.slug === cal.page);
+  return { calendars: all.filter((c) => c.enabled && onPage(c.cal)).map((c) => c.cal), pages };
 }
 
 /**

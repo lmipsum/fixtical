@@ -69,6 +69,15 @@ calendars:
 | `calendars[].category`    | `men`           | `men`, `women`, `futsal`, `women-futsal` or `youth`; water polo and volleyball: `men` or `women`. |
 | `calendars[].competition` |                 | A regular expression narrowing the competitions, e.g. `U19`.                                      |
 | `calendars[].include`     | `[league, cup]` | Leave out the cups, or the league.                                                                |
+| `calendars[].page`        |                 | The page listing the calendar: one of `pages[].slug`. Required with `pages`.                      |
+| `calendars[].enabled`     | `true`          | `false`: not built nor listed, its settings kept.                                                 |
+| `pages[].slug`            |                 | Address of the page under the site: `<slug>/`. Lowercase letters, digits and dashes.              |
+| `pages[].title`           |                 | The page's name in the switcher between the pages.                                                |
+| `pages[].default`         | the first page  | `true`: the site's main page shows it.                                                            |
+| `pages[].enabled`         | `true`          | `false`: the page and its calendars are left out.                                                 |
+
+Without `pages` one page lists every calendar. With them each page lists its own; the feeds stay at
+`<slug>.ics`, so a calendar moved to another page keeps its address.
 
 Times are in `Europe/Budapest`, the event texts in Hungarian.
 

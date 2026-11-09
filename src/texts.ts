@@ -17,6 +17,8 @@ export const PAGE = {
   apple: "Feliratkozás – iPhone / Mac",
   google: "Feliratkozás – Google Naptár",
   address: "Cím más naptárhoz:",
+  /** The page switcher's label, and the list of the pages without scripts. */
+  team: "Csapat:",
   file: "Naptárfájl",
   /** Section headings by source, futsal apart from football. */
   sections: {

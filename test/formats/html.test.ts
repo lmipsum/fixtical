@@ -65,6 +65,29 @@ describe("index page", () => {
     expect(html).not.toContain("webcal");
   });
 
+  it("switches between pages, also without scripts, and links the files from its own place", () => {
+    const pages = [
+      { slug: "ujpest", title: "Újpest" },
+      { slug: "bekescsaba", title: "Békéscsaba" },
+    ];
+    const html = indexHtml([{ slug: "ujpest", name: "Újpest FC" }], {
+      pages,
+      current: "bekescsaba",
+      root: "../",
+    });
+    expect(html).toContain('<select onchange="location.href = this.value">');
+    expect(html).toContain('<option value="../ujpest/">Újpest</option>');
+    expect(html).toContain('<option value="../bekescsaba/" selected>Békéscsaba</option>');
+    expect(html).toContain(
+      '<noscript><p class="pages">Csapat: <a href="../ujpest/">Újpest</a> · <a href="../bekescsaba/">Békéscsaba</a></p></noscript>',
+    );
+    expect(html).toContain("<title>Meccsnaptárak – Békéscsaba</title>");
+    expect(html).toContain('<a href="../ujpest.ics">Naptárfájl</a>');
+    expect(indexHtml([], { pages: [pages[0] ?? { slug: "", title: "" }], current: "ujpest" })).not.toContain(
+      "<select",
+    );
+  });
+
   it("escapes names and slugs", () => {
     const html = indexHtml([{ slug: 'a"b', name: "<b>&" }]);
     expect(html).toContain("&#60;b&#62;&#38;");
