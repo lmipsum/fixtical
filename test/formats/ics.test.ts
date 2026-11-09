@@ -60,6 +60,12 @@ describe("stale feed", () => {
     const ics = buildIcs({ ...META, staleSince: "2026-10-30T10:00:00Z" }, [makeFixture()], NOW);
     expect(ics).toContain("UID:stale@fixtical");
     expect(ics).toContain("SUMMARY:A naptár nem frissült 2026-10-30 óta");
+    const english = buildIcs(
+      { ...META, staleSince: "2026-10-30T10:00:00Z", language: "en" },
+      [makeFixture()],
+      NOW,
+    );
+    expect(english).toContain("SUMMARY:The calendar has not been updated since 2026-10-30");
     expect(ics).toContain("DTSTART;VALUE=DATE:20261103");
   });
 });
@@ -105,6 +111,15 @@ describe("the event's link", () => {
       lines: [`Vendégjegy: ${note.url}`],
     });
     expect(eventLinks(f, labelled, start, start, TZ).lines).toEqual([`Adatlap: ${match}`]);
+  });
+
+  it("speaks the calendar's language, its label too", () => {
+    const labelled = { lines: [], url: note.url, label: { en: "Away tickets", hu: "Vendégjegy" } };
+    expect(eventLinks(f, labelled, start, NOW, TZ, "en").lines).toEqual([`Away tickets: ${note.url}`]);
+    expect(eventLinks(f, labelled, start, start, TZ, "en").lines).toEqual([`Match page: ${match}`]);
+    expect(eventLinks(f, { ...labelled, label: { hu: "Jegy" } }, start, NOW, TZ, "en").lines).toEqual([
+      `Jegy: ${note.url}`,
+    ]);
   });
 
   it("is the annotation's link until the end of the day while the time is not set", () => {

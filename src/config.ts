@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { parse as parseYaml } from "yaml";
 import { SOURCES } from "./sources/index.ts";
+import { LANGUAGE, LANGUAGES, type Language } from "./texts.ts";
 import { isRecord } from "./util.ts";
 
 export const CATEGORIES = ["men", "women", "futsal", "women-futsal", "youth"] as const;
@@ -31,6 +32,8 @@ export interface PageConfig {
   title: string;
   /** The page the site's main page shows. */
   isDefault: boolean;
+  /** The language of the page and of its calendars' own texts. */
+  language: Language;
 }
 
 export interface Config {
@@ -67,7 +70,7 @@ const CALENDAR_KEYS = new Set([
   "page",
   "enabled",
 ]);
-const PAGE_KEYS = new Set(["slug", "title", "default", "enabled"]);
+const PAGE_KEYS = new Set(["slug", "title", "default", "enabled", "language"]);
 
 /** A true/false setting; `fallback` when it is not set. */
 function flag(
@@ -214,7 +217,12 @@ function page(
   if (!title) problems.push(`${where}.title: expected a non-empty string`);
   const isDefault = flag(raw, "default", where, problems, false);
   const enabled = flag(raw, "enabled", where, problems, true);
-  return problems.length > before ? null : { page: { slug, title, isDefault }, enabled };
+  const language = raw.language ?? LANGUAGE;
+  if (!(LANGUAGES as readonly unknown[]).includes(language))
+    problems.push(`${where}.language: one of ${LANGUAGES.join(", ")}`);
+  return problems.length > before
+    ? null
+    : { page: { slug, title, isDefault, language: language as Language }, enabled };
 }
 
 /**

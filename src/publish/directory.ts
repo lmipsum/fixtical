@@ -56,7 +56,7 @@ export async function writeDirectory(
   const mainHtml = main
     ? indexHtml(
         feeds.filter((f) => f.page === main.slug),
-        { ...page, pages, current: main.slug },
+        { ...page, pages, current: main.slug, language: main.language },
       )
     : indexHtml(feeds, page);
   await writeAtomic(join(dir, "index.html"), mainHtml);
@@ -64,7 +64,7 @@ export async function writeDirectory(
     await mkdir(join(dir, p.slug), { recursive: true });
     const html = indexHtml(
       feeds.filter((f) => f.page === p.slug),
-      { ...page, pages, current: p.slug, root: "../" },
+      { ...page, pages, current: p.slug, root: "../", language: p.language },
     );
     await writeAtomic(join(dir, p.slug, "index.html"), html);
     written.push(`${p.slug}/index.html`);

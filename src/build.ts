@@ -135,6 +135,7 @@ export async function build(
       color: cal.color,
       timezone: TIMEZONE,
       staleSince: failingFor >= STALE_AFTER_MS ? (entry.updatedAt ?? entry.failingSince) : null,
+      language: config.pages.find((p) => p.slug === cal.page)?.language,
     };
     const extras = { annotations: options.annotations?.get(cal.slug) ?? new Map(), places };
     const has = entry.fixtures.length > 0;

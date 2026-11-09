@@ -75,11 +75,12 @@ calendars:
 | `pages[].title`           |                 | The page's name in the switcher between the pages.                                                |
 | `pages[].default`         | the first page  | `true`: the site's main page shows it.                                                            |
 | `pages[].enabled`         | `true`          | `false`: the page and its calendars are left out.                                                 |
+| `pages[].language`        | `hu`            | `hu` or `en`: the page's texts and the texts its calendars add to the events.                     |
 
 Without `pages` one page lists every calendar. With them each page lists its own; the feeds stay at
 `<slug>.ics`, so a calendar moved to another page keeps its address.
 
-Times are in `Europe/Budapest`, the event texts in Hungarian.
+Times are in `Europe/Budapest`; the event texts are in Hungarian, or in the language of the calendar's page.
 
 ## Annotations
 
@@ -112,7 +113,7 @@ Another tool can add lines and a link to the event of a match day with a
 - `url`: `https`; the event's link until kick-off (to the end of the day while the time is not set), then the
   match's page.
 - `label`: names `url` in the description as `<label>: <url>`; one text, or one per language tag. The calendar
-  shows the Hungarian one, else the first one.
+  shows the one in its page's language, else the Hungarian one, else the first one.
 - Annotations whose `updated_at` is more than 24 hours old are skipped, and a day without a match is ignored;
   `annotations` is at most 64 KB.
 

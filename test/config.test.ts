@@ -144,6 +144,7 @@ pages:
   - slug: bekescsaba
     title: Békéscsaba
     default: true
+    language: en
 calendars:
   - club: 14374
     slug: ujpest
@@ -153,8 +154,8 @@ calendars:
     page: bekescsaba
 `);
     expect(config.pages).toEqual([
-      { slug: "ujpest", title: "Újpest", isDefault: false },
-      { slug: "bekescsaba", title: "Békéscsaba", isDefault: true },
+      { slug: "ujpest", title: "Újpest", isDefault: false, language: "hu" },
+      { slug: "bekescsaba", title: "Békéscsaba", isDefault: true, language: "en" },
     ]);
     expect(config.calendars.map((c) => c.page)).toEqual(["ujpest", "bekescsaba"]);
   });
@@ -186,7 +187,7 @@ calendars:
     page: c
     enabled: false
 `);
-    expect(config.pages).toEqual([{ slug: "b", title: "B", isDefault: true }]);
+    expect(config.pages).toEqual([{ slug: "b", title: "B", isDefault: true, language: "hu" }]);
     expect(config.calendars.map((c) => c.slug)).toEqual(["b1"]);
     expect(loadConfig("calendars:\n  - club: 1\n    enabled: false\n  - club: 2\n").calendars).toHaveLength(
       1,
@@ -208,6 +209,7 @@ pages:
   - slug: empty
     title: Empty
     enabled: "no"
+    language: de
 calendars:
   - club: 1
     page: a
@@ -220,6 +222,7 @@ calendars:
       "pages[2].slug: lowercase letters, digits and dashes",
       "pages[2].title: expected a non-empty string",
       "pages[3].enabled: expected true or false",
+      "pages[3].language: one of hu, en",
       'pages: slug "a" is used twice',
       "pages: more than one default",
       "calendars[1].page: one of a",

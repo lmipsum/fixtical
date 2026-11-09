@@ -34,6 +34,7 @@ pages:
     default: true
   - slug: other
     title: Other
+    language: en
 calendars:
   - club: 14374
     slug: ujpest
@@ -61,6 +62,9 @@ calendars:
     const other = await readFile(join(dir, "other", "index.html"), "utf8");
     expect(other).toContain("https://x.example/f/copy.ics");
     expect(other).toContain('<option value="../main/">Main</option>');
+    expect(other).toContain('<html lang="en">');
+    expect(results.find((r) => r.slug === "ujpest")?.ics).toContain("Adatlap:");
+    expect(results.find((r) => r.slug === "copy")?.ics).toContain("Match page:");
     expect(contentDigest(results, config.pages)).not.toBe(
       contentDigest(
         results,

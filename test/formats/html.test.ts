@@ -88,6 +88,18 @@ describe("index page", () => {
     );
   });
 
+  it("speaks the page's language", () => {
+    const html = indexHtml([{ slug: "a", name: "A", source: "mvlsz" }], {
+      siteUrl: "https://x.example/",
+      language: "en",
+    });
+    expect(html).toContain('<html lang="en">');
+    expect(html).toContain("<h1>Match calendars</h1>");
+    expect(html).toContain("Water polo – MVLSZ data bank");
+    expect(html).toContain("Subscribe – Google Calendar");
+    expect(indexHtml([])).toContain('<html lang="hu">');
+  });
+
   it("escapes names and slugs", () => {
     const html = indexHtml([{ slug: 'a"b', name: "<b>&" }]);
     expect(html).toContain("&#60;b&#62;&#38;");

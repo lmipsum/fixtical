@@ -7682,27 +7682,48 @@ function ownTeam(fixtures) {
 }
 
 // src/texts.ts
+var LANGUAGES = ["hu", "en"];
 var LANGUAGE = "hu";
 var FEED = {
-  stale: (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`,
-  /** The match's page, named in the description. */
-  matchPage: (url) => `Adatlap: ${url}`
+  hu: {
+    stale: (date) => `A napt\xE1r nem friss\xFClt ${date} \xF3ta`,
+    matchPage: (url) => `Adatlap: ${url}`
+  },
+  en: {
+    stale: (date) => `The calendar has not been updated since ${date}`,
+    matchPage: (url) => `Match page: ${url}`
+  }
 };
 var PAGE = {
-  title: "Meccsnapt\xE1rak",
-  intro: "Iratkozz fel egy napt\xE1rra: a meccsek \xE9s a v\xE1ltoz\xE1sok magukt\xF3l friss\xFClnek a napt\xE1radban.",
-  apple: "Feliratkoz\xE1s \u2013 iPhone / Mac",
-  google: "Feliratkoz\xE1s \u2013 Google Napt\xE1r",
-  address: "C\xEDm m\xE1s napt\xE1rhoz:",
-  /** The page switcher's label, and the list of the pages without scripts. */
-  team: "Csapat:",
-  file: "Napt\xE1rf\xE1jl",
-  /** Section headings by source, futsal apart from football. */
-  sections: {
-    mlsz: "Labdar\xFAg\xE1s \u2013 MLSZ adatbank",
-    "mlsz-futsal": "Futsal \u2013 MLSZ adatbank",
-    mvlsz: "V\xEDzilabda \u2013 MVLSZ adatbank",
-    mrsz: "R\xF6plabda \u2013 MRSZ"
+  hu: {
+    title: "Meccsnapt\xE1rak",
+    intro: "Iratkozz fel egy napt\xE1rra: a meccsek \xE9s a v\xE1ltoz\xE1sok magukt\xF3l friss\xFClnek a napt\xE1radban.",
+    apple: "Feliratkoz\xE1s \u2013 iPhone / Mac",
+    google: "Feliratkoz\xE1s \u2013 Google Napt\xE1r",
+    address: "C\xEDm m\xE1s napt\xE1rhoz:",
+    team: "Csapat:",
+    file: "Napt\xE1rf\xE1jl",
+    sections: {
+      mlsz: "Labdar\xFAg\xE1s \u2013 MLSZ adatbank",
+      "mlsz-futsal": "Futsal \u2013 MLSZ adatbank",
+      mvlsz: "V\xEDzilabda \u2013 MVLSZ adatbank",
+      mrsz: "R\xF6plabda \u2013 MRSZ"
+    }
+  },
+  en: {
+    title: "Match calendars",
+    intro: "Subscribe to a calendar: the matches and their changes reach your calendar by themselves.",
+    apple: "Subscribe \u2013 iPhone / Mac",
+    google: "Subscribe \u2013 Google Calendar",
+    address: "Address for other calendars:",
+    team: "Team:",
+    file: "Calendar file",
+    sections: {
+      mlsz: "Football \u2013 MLSZ data bank",
+      "mlsz-futsal": "Futsal \u2013 MLSZ data bank",
+      mvlsz: "Water polo \u2013 MVLSZ data bank",
+      mrsz: "Volleyball \u2013 MRSZ"
+    }
   }
 };
 
@@ -7753,14 +7774,14 @@ function summary(f) {
   const match = `${teamName(f.home)}${between}${teamName(f.away)}`;
   return f.competition ? `${match} | ${f.competition}` : match;
 }
-function eventLinks(f, note, start, now, timezone) {
+function eventLinks(f, note, start, now, timezone, language = LANGUAGE) {
   const lines = note?.lines ?? [];
   const before = start ? now < start : localDate(now, timezone) <= f.date;
   if (before && note?.url) {
-    const label = note.label ? labelIn(note.label, LANGUAGE, LANGUAGE) : "";
+    const label = note.label ? labelIn(note.label, language, LANGUAGE) : "";
     return { url: note.url, lines: [...lines, label ? `${label}: ${note.url}` : note.url] };
   }
-  return { url: f.url, lines: f.url ? [...lines, FEED.matchPage(f.url)] : lines };
+  return { url: f.url, lines: f.url ? [...lines, FEED[language].matchPage(f.url)] : lines };
 }
 function event(f, meta, now, extras) {
   const note = extras.annotations?.get(f.date);
@@ -7769,7 +7790,7 @@ function event(f, meta, now, extras) {
     // The day is set, the time is not yet: an all-day event until it is.
     [`DTSTART;VALUE=DATE:${dateValue(f.date)}`, `DTEND;VALUE=DATE:${dateValue(addDays(f.date, 1))}`]
   );
-  const { url, lines } = eventLinks(f, note, start, now, meta.timezone);
+  const { url, lines } = eventLinks(f, note, start, now, meta.timezone, meta.language);
   return [
     "BEGIN:VEVENT",
     `UID:${f.source}-${f.id}@fixtical`,
@@ -7790,7 +7811,7 @@ function staleEvent(meta, since, now) {
     `DTSTAMP:${utcStamp(now)}`,
     `DTSTART;VALUE=DATE:${dateValue(today)}`,
     `DTEND;VALUE=DATE:${dateValue(addDays(today, 1))}`,
-    `SUMMARY:${escapeText(FEED.stale(localDate(new Date(since), meta.timezone)))}`,
+    `SUMMARY:${escapeText(FEED[meta.language ?? LANGUAGE].stale(localDate(new Date(since), meta.timezone)))}`,
     "END:VEVENT"
   ];
 }
@@ -13161,7 +13182,8 @@ async function build(config, state, client, now, options = {}) {
       name,
       color: cal.color,
       timezone: TIMEZONE,
-      staleSince: failingFor >= STALE_AFTER_MS ? entry.updatedAt ?? entry.failingSince : null
+      staleSince: failingFor >= STALE_AFTER_MS ? entry.updatedAt ?? entry.failingSince : null,
+      language: config.pages.find((p) => p.slug === cal.page)?.language
     };
     const extras = { annotations: options.annotations?.get(cal.slug) ?? /* @__PURE__ */ new Map(), places };
     const has = entry.fixtures.length > 0;
@@ -13213,7 +13235,7 @@ var CALENDAR_KEYS = /* @__PURE__ */ new Set([
   "page",
   "enabled"
 ]);
-var PAGE_KEYS = /* @__PURE__ */ new Set(["slug", "title", "default", "enabled"]);
+var PAGE_KEYS = /* @__PURE__ */ new Set(["slug", "title", "default", "enabled", "language"]);
 function flag(raw, key, where, problems, fallback) {
   const value = raw[key];
   if (value === void 0 || value === null) return fallback;
@@ -13321,7 +13343,10 @@ function page2(raw, where, problems) {
   if (!title) problems.push(`${where}.title: expected a non-empty string`);
   const isDefault = flag(raw, "default", where, problems, false);
   const enabled = flag(raw, "enabled", where, problems, true);
-  return problems.length > before ? null : { page: { slug, title, isDefault }, enabled };
+  const language = raw.language ?? LANGUAGE;
+  if (!LANGUAGES.includes(language))
+    problems.push(`${where}.language: one of ${LANGUAGES.join(", ")}`);
+  return problems.length > before ? null : { page: { slug, title, isDefault, language }, enabled };
 }
 function pagesOf(list2, calendars, problems) {
   if (list2 === void 0 || list2 === null) {
@@ -13414,10 +13439,10 @@ var GOOGLE_ICON = icon(
 );
 
 // src/formats/html.ts
-function sectionOf(feed) {
+function sectionOf(feed, language = LANGUAGE) {
   const source = feed.source ?? "";
   const futsal = source === "mlsz" && /futsal/.test(feed.category ?? "");
-  return PAGE.sections[futsal ? "mlsz-futsal" : source] ?? source;
+  return PAGE[language].sections[futsal ? "mlsz-futsal" : source] ?? source;
 }
 function competitionsOf(fixtures) {
   const counts = /* @__PURE__ */ new Map();
@@ -13442,6 +13467,8 @@ function indexHtml(feeds, options = {}) {
   const site = options.siteUrl ?? "";
   const base = site && !site.endsWith("/") ? `${site}/` : site;
   const root = options.root ?? "";
+  const language = options.language ?? LANGUAGE;
+  const text2 = PAGE[language];
   const item = (f) => {
     const covers = f.competitions?.length ? `
       <p class="covers">${f.competitions.map(escapeHtml).join(" \xB7 ")}</p>` : "";
@@ -13449,7 +13476,7 @@ function indexHtml(feeds, options = {}) {
     if (!base) {
       return `    <li>
 ${name}
-      <p><a href="${root}${escapeHtml(f.slug)}.ics">${PAGE.file}</a></p>
+      <p><a href="${root}${escapeHtml(f.slug)}.ics">${text2.file}</a></p>
     </li>`;
     }
     const url = `${base}${f.slug}.ics`;
@@ -13459,15 +13486,15 @@ ${name}
     return [
       `    <li${style}>`,
       name,
-      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${PAGE.apple}</span></a>`,
-      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${PAGE.google}</span></a></p>`,
-      `      <p class="address">${PAGE.address} <code>${escapeHtml(url)}</code></p>`,
+      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${text2.apple}</span></a>`,
+      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${text2.google}</span></a></p>`,
+      `      <p class="address">${text2.address} <code>${escapeHtml(url)}</code></p>`,
       "    </li>"
     ].join("\n");
   };
   const sections = /* @__PURE__ */ new Map();
   for (const f of feeds) {
-    const title2 = sectionOf(f);
+    const title2 = sectionOf(f, language);
     sections.set(title2, [...sections.get(title2) ?? [], f]);
   }
   const body = [...sections].map(([title2, list2]) => {
@@ -13481,17 +13508,17 @@ ${list2.map(item).join("\n")}
   const current = pages.find((p) => p.slug === options.current);
   const pageUrl = (p) => `${root}${escapeHtml(p.slug)}/`;
   const switcher = pages.length > 1 ? [
-    `  <p class="pages"><label>${PAGE.team} <select onchange="location.href = this.value">`,
+    `  <p class="pages"><label>${text2.team} <select onchange="location.href = this.value">`,
     ...pages.map(
       (p) => `    <option value="${pageUrl(p)}"${p === current ? " selected" : ""}>${escapeHtml(p.title)}</option>`
     ),
     "  </select></label></p>",
-    `  <noscript><p class="pages">${PAGE.team} ${pages.map((p) => `<a href="${pageUrl(p)}">${escapeHtml(p.title)}</a>`).join(" \xB7 ")}</p></noscript>`,
+    `  <noscript><p class="pages">${text2.team} ${pages.map((p) => `<a href="${pageUrl(p)}">${escapeHtml(p.title)}</a>`).join(" \xB7 ")}</p></noscript>`,
     ""
   ].join("\n") : "";
-  const title = current ? `${PAGE.title} \u2013 ${escapeHtml(current.title)}` : PAGE.title;
+  const title = current ? `${text2.title} \u2013 ${escapeHtml(current.title)}` : text2.title;
   return `<!doctype html>
-<html lang="hu">
+<html lang="${language}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13516,8 +13543,8 @@ ${list2.map(item).join("\n")}
   </style>
 </head>
 <body>
-  <h1>${PAGE.title}</h1>
-  <p>${PAGE.intro}</p>
+  <h1>${text2.title}</h1>
+  <p>${text2.intro}</p>
 ${switcher}${body}
 </body>
 </html>
@@ -13590,14 +13617,14 @@ async function writeDirectory(dir, results, state, page3 = {}, pages = []) {
   const main2 = pages.find((p) => p.isDefault);
   const mainHtml = main2 ? indexHtml(
     feeds.filter((f) => f.page === main2.slug),
-    { ...page3, pages, current: main2.slug }
+    { ...page3, pages, current: main2.slug, language: main2.language }
   ) : indexHtml(feeds, page3);
   await writeAtomic(join2(dir, "index.html"), mainHtml);
   for (const p of pages) {
     await mkdir(join2(dir, p.slug), { recursive: true });
     const html = indexHtml(
       feeds.filter((f) => f.page === p.slug),
-      { ...page3, pages, current: p.slug, root: "../" }
+      { ...page3, pages, current: p.slug, root: "../", language: p.language }
     );
     await writeAtomic(join2(dir, p.slug, "index.html"), html);
     written.push(`${p.slug}/index.html`);
