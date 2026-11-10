@@ -7697,11 +7697,12 @@ var FEED = {
 var PAGE = {
   hu: {
     title: "Meccsnapt\xE1rak",
-    intro: "Iratkozz fel egy napt\xE1rra: a meccsek \xE9s a v\xE1ltoz\xE1sok magukt\xF3l friss\xFClnek a napt\xE1radban.",
+    intro: "Iratkozz fel egy napt\xE1rra az ikonjaival, vagy koppints a c\xEDm\xE9re a m\xE1sol\xE1s\xE1hoz: a meccsek \xE9s a v\xE1ltoz\xE1sok magukt\xF3l friss\xFClnek a napt\xE1radban.",
     apple: "Feliratkoz\xE1s \u2013 iPhone / Mac",
     google: "Feliratkoz\xE1s \u2013 Google Napt\xE1r",
-    address: "C\xEDm m\xE1s napt\xE1rhoz:",
-    team: "Csapat:",
+    copy: "C\xEDm m\xE1sol\xE1sa",
+    copied: "M\xE1solva \u2713",
+    page: "Oldal",
     file: "Napt\xE1rf\xE1jl",
     sections: {
       mlsz: "Labdar\xFAg\xE1s \u2013 MLSZ adatbank",
@@ -7712,11 +7713,12 @@ var PAGE = {
   },
   en: {
     title: "Match calendars",
-    intro: "Subscribe to a calendar: the matches and their changes reach your calendar by themselves.",
+    intro: "Subscribe to a calendar with its icons, or tap its address to copy it: the matches and their changes reach your calendar by themselves.",
     apple: "Subscribe \u2013 iPhone / Mac",
     google: "Subscribe \u2013 Google Calendar",
-    address: "Address for other calendars:",
-    team: "Team:",
+    copy: "Copy the address",
+    copied: "Copied \u2713",
+    page: "Page",
     file: "Calendar file",
     sections: {
       mlsz: "Football \u2013 MLSZ data bank",
@@ -13463,6 +13465,20 @@ function subscribeLinks(feedUrl) {
   const webcal = feedUrl.replace(/^https?:\/\//, "webcal://");
   return { webcal, google: `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}` };
 }
+function sectionColor(feeds) {
+  return feeds.map((f) => f.color).find((c) => !!c && COLOR_RE.test(c)) ?? null;
+}
+var COPY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12"/><path d="M5 15V5h10"/></svg>';
+var COPY_SCRIPT = `  <script>
+    for (const b of document.querySelectorAll(".copy")) {
+      b.addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(b.dataset.copy); } catch { return; }
+        b.classList.add("copied");
+        setTimeout(() => b.classList.remove("copied"), 1500);
+      });
+    }
+  </script>
+`;
 function indexHtml(feeds, options = {}) {
   const site = options.siteUrl ?? "";
   const base = site && !site.endsWith("/") ? `${site}/` : site;
@@ -13471,24 +13487,23 @@ function indexHtml(feeds, options = {}) {
   const text2 = PAGE[language];
   const item = (f) => {
     const covers = f.competitions?.length ? `
-      <p class="covers">${f.competitions.map(escapeHtml).join(" \xB7 ")}</p>` : "";
-    const name = `      <h3>${escapeHtml(f.name)}</h3>${covers}`;
+      <p class="covers">${f.competitions.map((c) => `<span>${escapeHtml(c)}</span>`).join("")}</p>` : "";
     if (!base) {
+      const file = `<p class="buttons"><a href="${root}${escapeHtml(f.slug)}.ics">${text2.file}</a></p>`;
       return `    <li>
-${name}
-      <p><a href="${root}${escapeHtml(f.slug)}.ics">${text2.file}</a></p>
+      <h3>${escapeHtml(f.name)}</h3>
+      ${file}${covers}
     </li>`;
     }
     const url = `${base}${f.slug}.ics`;
     const { webcal, google } = subscribeLinks(url);
-    const color = f.color && COLOR_RE.test(f.color) ? f.color : null;
-    const style = color ? ` style="--cal: ${color}; --on-cal: ${textOn(color)}"` : "";
+    const link = (href, icon2, name) => `<a class="button" href="${escapeHtml(href)}" title="${name}">${icon2}<span>${name}</span></a>`;
+    const shown = escapeHtml(url.replace(/^https?:\/\//, ""));
     return [
-      `    <li${style}>`,
-      name,
-      `      <p class="buttons"><a class="button" href="${escapeHtml(webcal)}">${APPLE_ICON}<span>${text2.apple}</span></a>`,
-      `        <a class="button" href="${escapeHtml(google)}">${GOOGLE_ICON}<span>${text2.google}</span></a></p>`,
-      `      <p class="address">${text2.address} <code>${escapeHtml(url)}</code></p>`,
+      "    <li>",
+      `      <h3>${escapeHtml(f.name)}</h3>`,
+      `      <p class="buttons">${link(webcal, APPLE_ICON, text2.apple)}${link(google, GOOGLE_ICON, text2.google)}</p>${covers}`,
+      `      <p class="address"><button class="copy" type="button" data-copy="${escapeHtml(url)}" title="${text2.copy}"><span class="url"><bdi dir="ltr">${shown}</bdi></span>${COPY_ICON}<span class="done">${text2.copied}</span></button></p>`,
       "    </li>"
     ].join("\n");
   };
@@ -13497,23 +13512,36 @@ ${name}
     const title2 = sectionOf(f, language);
     sections.set(title2, [...sections.get(title2) ?? [], f]);
   }
-  const body = [...sections].map(([title2, list2]) => {
-    const heading = title2 ? `  <h2>${escapeHtml(title2)}</h2>
-` : "";
-    return `${heading}  <ul>
+  const fold2 = sections.size > 1;
+  const body = [...sections].map(([title2, list2], n) => {
+    const color = sectionColor(list2);
+    const style = color ? ` style="--cal: ${color}; --on-cal: ${textOn(color)}"` : "";
+    const items = `  <ul>
 ${list2.map(item).join("\n")}
   </ul>`;
+    if (fold2) {
+      const open = n === 0 ? " open" : "";
+      return `  <details class="sport" name="sports"${open}${style}>
+  <summary>${escapeHtml(title2)}</summary>
+${items}
+  </details>`;
+    }
+    const heading = title2 ? `  <h2>${escapeHtml(title2)}</h2>
+` : "";
+    return `  <section class="sport"${style}>
+${heading}${items}
+  </section>`;
   }).join("\n");
   const pages = options.pages ?? [];
   const current = pages.find((p) => p.slug === options.current);
   const pageUrl = (p) => `${root}${escapeHtml(p.slug)}/`;
   const switcher = pages.length > 1 ? [
-    `  <p class="pages"><label>${text2.team} <select onchange="location.href = this.value">`,
+    `  <p class="pages"><span class="picker"><select aria-label="${text2.page}" onchange="location.href = this.value">`,
     ...pages.map(
       (p) => `    <option value="${pageUrl(p)}"${p === current ? " selected" : ""}>${escapeHtml(p.title)}</option>`
     ),
-    "  </select></label></p>",
-    `  <noscript><p class="pages">${text2.team} ${pages.map((p) => `<a href="${pageUrl(p)}">${escapeHtml(p.title)}</a>`).join(" \xB7 ")}</p></noscript>`,
+    "  </select></span></p>",
+    `  <noscript><p class="pages">${pages.map((p) => `<a href="${pageUrl(p)}">${escapeHtml(p.title)}</a>`).join(" \xB7 ")}</p></noscript>`,
     ""
   ].join("\n") : "";
   const title = current ? `${text2.title} \u2013 ${escapeHtml(current.title)}` : text2.title;
@@ -13524,29 +13552,44 @@ ${list2.map(item).join("\n")}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title}</title>
   <style>
-    :root { color-scheme: light dark; --fg: #1d1d1f; --bg: #fff; --muted: #6e6e73; --accent: #0a66c2; --line: #d2d2d7; }
-    @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --bg: #1c1c1e; --muted: #a1a1a6; --accent: #4da3ff; --line: #3a3a3c; } }
+    :root { color-scheme: light dark; --fg: #1d1d1f; --bg: #fff; --accent: #0a66c2; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --bg: #1c1c1e; --accent: #4da3ff; } }
     body { margin: 0 auto; max-width: 40rem; padding: 1.5rem 1rem; font: 16px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); }
     h1 { font-size: 1.6rem; margin: 0 0 .5rem; }
-    h2 { font-size: .85rem; margin: 2rem 0 .4rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    ul { list-style: none; margin: 0; padding: 0; }
-    li { border-top: 1px solid var(--line); padding: 1rem 0; }
-    h3 { font-size: 1.15rem; margin: 0 0 .6rem; }
-    .covers { margin: -.5rem 0 .6rem; color: var(--muted); font-size: .9rem; }
-    .buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 .6rem; }
-    .button { display: inline-flex; align-items: center; gap: .5rem; padding: .55rem .9rem; border-radius: .5rem; background: var(--cal, var(--accent)); color: var(--on-cal, #fff); text-decoration: none; font-weight: 600; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .18); }
-    .icon { width: 1.1em; height: 1.1em; flex: none; }
-    .address { margin: 0; color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
-    code { color: var(--fg); user-select: all; }
-    .pages { margin: 1rem 0 0; }
-    select { font: inherit; padding: .3rem .5rem; border-radius: .4rem; }
+    .pages { margin: 1.25rem 0 1rem; }
+    .picker { position: relative; display: inline-flex; }
+    .picker::after { content: ""; position: absolute; right: 1rem; top: 50%; width: .45rem; height: .45rem; margin-top: -.35rem; border: solid var(--fg); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none; }
+    select { appearance: none; -webkit-appearance: none; margin: 0; border: 2px solid var(--fg); border-radius: 0; padding: .4rem 2.6rem .4rem .8rem; font: 600 1rem/1.4 system-ui, sans-serif; color: var(--fg); background: var(--bg); cursor: pointer; }
+    option { color: var(--fg); background: var(--bg); }
+    .sport { --cal-fg: var(--on-cal, #fff); margin: 0 0 .75rem; background: var(--cal, var(--accent)); color: var(--cal-fg); }
+    @media (prefers-color-scheme: dark) { .sport { box-shadow: inset 0 0 0 1px rgb(255 255 255 / .15); } }
+    summary, .sport h2 { display: flex; align-items: center; justify-content: space-between; margin: 0; padding: .9rem 1rem; font-size: 1.05rem; font-weight: 700; }
+    summary { cursor: pointer; list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: ""; width: .55rem; height: .55rem; margin-right: .2rem; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform .15s; }
+    details[open] summary::after { transform: rotate(-135deg); }
+    ul { list-style: none; margin: 0; padding: 0 1rem .25rem; }
+    li { display: grid; grid-template-columns: 1fr auto; column-gap: 1rem; align-items: center; padding: 1rem 0; border-top: 1px solid color-mix(in srgb, var(--cal-fg) 25%, transparent); }
+    h3 { margin: 0; font-size: 1.15rem; }
+    .buttons { display: flex; gap: 1.1rem; margin: 0; }
+    .buttons a { display: inline-flex; padding: .25rem; color: inherit; }
+    .button span, .copy .done { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .icon { width: 1.9rem; height: 1.9rem; }
+    .covers, .address { grid-column: 1 / -1; margin: .3rem 0 0; font-size: .9rem; color: color-mix(in srgb, var(--cal-fg) 80%, transparent); }
+    .covers span { display: block; }
+    .copy { all: unset; display: inline-flex; align-items: center; gap: .45rem; max-width: 100%; cursor: pointer; font: .8rem/1.4 ui-monospace, monospace; }
+    .copy:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+    .copy svg { width: 1rem; height: 1rem; flex: none; }
+    .copy .url { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; direction: rtl; text-align: left; }
+    .copy.copied .url, .copy.copied svg { display: none; }
+    .copy.copied .done { position: static; width: auto; height: auto; clip-path: none; font: 600 .9rem/1.4 system-ui, sans-serif; }
   </style>
 </head>
 <body>
   <h1>${text2.title}</h1>
   <p>${text2.intro}</p>
 ${switcher}${body}
-</body>
+${base ? COPY_SCRIPT : ""}</body>
 </html>
 `;
 }

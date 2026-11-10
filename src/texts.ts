@@ -28,11 +28,14 @@ export const FEED: Record<Language, FeedTexts> = {
 interface PageTexts {
   title: string;
   intro: string;
+  /** Names of the icon-only subscribe links. */
   apple: string;
   google: string;
-  address: string;
-  /** The page switcher's label, and the list of the pages without scripts. */
-  team: string;
+  /** The address's copy button, and what it says once copied. */
+  copy: string;
+  copied: string;
+  /** The page switcher's name for screen readers. */
+  page: string;
   file: string;
   /** Section headings by source, futsal apart from football. */
   sections: Record<string, string>;
@@ -42,11 +45,13 @@ interface PageTexts {
 export const PAGE: Record<Language, PageTexts> = {
   hu: {
     title: "Meccsnaptárak",
-    intro: "Iratkozz fel egy naptárra: a meccsek és a változások maguktól frissülnek a naptáradban.",
+    intro:
+      "Iratkozz fel egy naptárra az ikonjaival, vagy koppints a címére a másolásához: a meccsek és a változások maguktól frissülnek a naptáradban.",
     apple: "Feliratkozás – iPhone / Mac",
     google: "Feliratkozás – Google Naptár",
-    address: "Cím más naptárhoz:",
-    team: "Csapat:",
+    copy: "Cím másolása",
+    copied: "Másolva ✓",
+    page: "Oldal",
     file: "Naptárfájl",
     sections: {
       mlsz: "Labdarúgás – MLSZ adatbank",
@@ -57,11 +62,13 @@ export const PAGE: Record<Language, PageTexts> = {
   },
   en: {
     title: "Match calendars",
-    intro: "Subscribe to a calendar: the matches and their changes reach your calendar by themselves.",
+    intro:
+      "Subscribe to a calendar with its icons, or tap its address to copy it: the matches and their changes reach your calendar by themselves.",
     apple: "Subscribe – iPhone / Mac",
     google: "Subscribe – Google Calendar",
-    address: "Address for other calendars:",
-    team: "Team:",
+    copy: "Copy the address",
+    copied: "Copied ✓",
+    page: "Page",
     file: "Calendar file",
     sections: {
       mlsz: "Football – MLSZ data bank",
