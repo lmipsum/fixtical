@@ -52,15 +52,12 @@ export class Client {
     form?: Record<string, string>,
     extraHeaders: Record<string, string> = {},
   ): Promise<string> {
-    const host = new URL(url).host;
-    const wait = (this.last.get(host) ?? Number.NEGATIVE_INFINITY) + this.minGapMs - this.now();
-    if (wait > 0) await this.sleep(wait);
     const headers: Record<string, string> = {
       "User-Agent": this.userAgent,
       "Accept-Language": "hu",
       ...extraHeaders,
     };
-    const init: RequestInit = { headers, signal: AbortSignal.timeout(this.timeoutMs) };
+    const init: RequestInit = { headers };
     if (form) {
       init.method = "POST";
       headers["Content-Type"] = "application/x-www-form-urlencoded";
@@ -69,13 +66,28 @@ export class Client {
     }
     let response: Response;
     try {
-      response = await this.fetchFn(url, init);
+      // A dropped connection is mostly a one-off, so it gets one more try. A
+      // timeout does not: the host is slow already.
+      response = await this.send(url, init).catch((e: unknown) => {
+        if (e instanceof Error && e.name === "TimeoutError") throw e;
+        return this.send(url, init);
+      });
     } catch (e) {
       throw new SourceError(`${what}: ${e instanceof Error ? e.name : "request failed"}`);
-    } finally {
-      this.last.set(host, this.now());
     }
     if (!response.ok) throw new SourceError(`${what}: HTTP ${response.status}`);
     return await response.text();
+  }
+
+  /** One request, after the gap its host is due. */
+  private async send(url: string, init: RequestInit): Promise<Response> {
+    const host = new URL(url).host;
+    const wait = (this.last.get(host) ?? Number.NEGATIVE_INFINITY) + this.minGapMs - this.now();
+    if (wait > 0) await this.sleep(wait);
+    try {
+      return await this.fetchFn(url, { ...init, signal: AbortSignal.timeout(this.timeoutMs) });
+    } finally {
+      this.last.set(host, this.now());
+    }
   }
 }
