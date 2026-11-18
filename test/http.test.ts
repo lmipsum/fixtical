@@ -48,12 +48,47 @@ describe("http client", () => {
     await expect(failing(429)).rejects.toBeInstanceOf(SourceError);
     await expect(failing(429)).rejects.toThrow(/^team page: HTTP 429$/);
     const network = new Client({
+      minGapMs: 0,
       fetch: async () => {
         throw new TypeError("fetch failed: https://a.example/secret-path");
       },
     }).text("https://a.example/secret-path", "team page");
     await expect(network).rejects.toBeInstanceOf(SourceError);
     await expect(network).rejects.toThrow("team page: TypeError");
+  });
+
+  it("tries a dropped connection once more, after the gap", async () => {
+    let clock = 0;
+    const waits: number[] = [];
+    let calls = 0;
+    const client = new Client({
+      minGapMs: 2000,
+      now: () => clock,
+      sleep: async (ms) => {
+        waits.push(ms);
+        clock += ms;
+      },
+      fetch: async () => {
+        if (++calls === 1) throw new TypeError("fetch failed");
+        return new Response("ok");
+      },
+    });
+    expect(await client.text("https://a.example/1", "one")).toBe("ok");
+    expect(calls).toBe(2);
+    expect(waits).toEqual([2000]);
+  });
+
+  it("does not repeat a request that timed out", async () => {
+    let calls = 0;
+    const client = new Client({
+      minGapMs: 0,
+      fetch: async () => {
+        calls++;
+        throw new DOMException("timed out", "TimeoutError");
+      },
+    });
+    await expect(client.text("https://a.example/1", "one")).rejects.toThrow("one: TimeoutError");
+    expect(calls).toBe(1);
   });
 
   it("defaults to the runtime's fetch", async () => {

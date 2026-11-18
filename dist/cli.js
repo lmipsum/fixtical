@@ -7419,15 +7419,12 @@ var Client = class {
   }
   /** The body of a 2xx answer as text. `what` names the request in errors. */
   async text(url, what, form, extraHeaders = {}) {
-    const host = new URL(url).host;
-    const wait = (this.last.get(host) ?? Number.NEGATIVE_INFINITY) + this.minGapMs - this.now();
-    if (wait > 0) await this.sleep(wait);
     const headers = {
       "User-Agent": this.userAgent,
       "Accept-Language": "hu",
       ...extraHeaders
     };
-    const init = { headers, signal: AbortSignal.timeout(this.timeoutMs) };
+    const init = { headers };
     if (form) {
       init.method = "POST";
       headers["Content-Type"] = "application/x-www-form-urlencoded";
@@ -7436,14 +7433,26 @@ var Client = class {
     }
     let response;
     try {
-      response = await this.fetchFn(url, init);
+      response = await this.send(url, init).catch((e) => {
+        if (e instanceof Error && e.name === "TimeoutError") throw e;
+        return this.send(url, init);
+      });
     } catch (e) {
       throw new SourceError(`${what}: ${e instanceof Error ? e.name : "request failed"}`);
-    } finally {
-      this.last.set(host, this.now());
     }
     if (!response.ok) throw new SourceError(`${what}: HTTP ${response.status}`);
     return await response.text();
+  }
+  /** One request, after the gap its host is due. */
+  async send(url, init) {
+    const host = new URL(url).host;
+    const wait = (this.last.get(host) ?? Number.NEGATIVE_INFINITY) + this.minGapMs - this.now();
+    if (wait > 0) await this.sleep(wait);
+    try {
+      return await this.fetchFn(url, { ...init, signal: AbortSignal.timeout(this.timeoutMs) });
+    } finally {
+      this.last.set(host, this.now());
+    }
   }
 };
 
